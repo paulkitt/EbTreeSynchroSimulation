@@ -17,7 +17,7 @@ public class EBTree<T> {
     Node<T> myRoot;
 
     static class Child<T> {
-        Node<T> myParent;
+        Node<T> myParent ;
     }
 
     static class Node<T> extends Child<T> {
@@ -117,7 +117,7 @@ public class EBTree<T> {
             } else {
                 parent.setChild(uid, node.getChild(~uid));
             }
-            mySize--;
+            this.mySize--;
             return leaf.myPayload;
         }
         return null;
