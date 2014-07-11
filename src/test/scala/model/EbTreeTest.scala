@@ -2,7 +2,6 @@ package model
 
 import org.scalatest._
 import src.main.scala.model.EbTree
-import src.main.scala.model.EbTree.Leaf
 
 
 /**
@@ -19,8 +18,8 @@ class EbTreeTest extends FunSuite{
   }
   test("findLeaf is invoked on EbTree with one element"){
     val tree = new EbTree[Int]
-    tree.myRoot =  tree.Node[Int](64)
-    tree.myRoot.setChild(1,tree.Leaf[Int](1,100))
+    tree.myRoot =  Some(tree.Node[Int](64))
+    tree.myRoot.get.setChild(1,tree.Leaf[Int](1,100))
 
     val leaf = tree.findLeaf(2)
     assert(leaf.isEmpty)
@@ -32,8 +31,8 @@ class EbTreeTest extends FunSuite{
 
   test("remove is invoked on EbTree with one leaf"){
     val tree = new EbTree[Int]
-    tree.myRoot =  tree.Node[Int](64)
-    tree.myRoot.setChild(1,tree.Leaf[Int](1,100))
+    tree.myRoot =  Some(tree.Node[Int](64))
+    tree.myRoot.get.setChild(1,tree.Leaf[Int](1,100))
 
   }
 }

@@ -1,3 +1,7 @@
+import java.util.IdentityHashMap;
+import java.util.LinkedList;
+import java.util.Queue;
+
 /** Elastic Binary Tree.
  *
  * Map of <long,T>
@@ -12,8 +16,11 @@
  * get: 57 ns
  * replace: 60 ns
  */
+
+//TODO make tree death dynamic => remove 64 constant
 public class EBTree<T> {
     int  mySize = 0;
+    int nodeCount = 0;
     Node<T> myRoot;
 
     static class Child<T> {
@@ -22,18 +29,26 @@ public class EBTree<T> {
 
     static class Node<T> extends Child<T> {
         int  myBit;
+        public int nr;
         Child<T> myZero, myOne;
 
-        public Node(int bit) {
-            myBit = bit;
+        public Node(int bit, int nrInc) {
+            myBit = bit; nr = nrInc;
         }
 
         final boolean bitOne(long uid) {
-            return ((uid & (1L << myBit)) != 0) && (myBit < 64);
+            long shift = 1L << myBit;
+            long xored = uid & shift;
+            return (xored != 0) && (myBit < 64);
         }
 
         final public Child<T> getChild(long uid) {
-            return (bitOne(uid) ? myOne : myZero);
+            if(bitOne(uid)){
+                return myOne;
+            }else{
+                return myZero;
+            }
+            //return (bitOne(uid) ? myOne : myZero);
         }
 
         final public void setChild(long uid, Child<T> child) {
@@ -52,10 +67,12 @@ public class EBTree<T> {
 
     static class Leaf<T> extends Child<T> {
         long myUid;
+        public int nr;
         T myPayload;
 
-        public Leaf(long uid, T payload) {
+        public Leaf(long uid, T payload,int nrInc) {
             myUid = uid;
+            nr = nrInc;
             myPayload = payload;
         }
 
@@ -77,8 +94,9 @@ public class EBTree<T> {
     public T put(long uid, T payload) {
         Leaf<T> leaf = findLeaf(uid);
         if (leaf == null) {
-            myRoot = new Node<T>(64);
-            myRoot.setChild(uid,  new Leaf<T>(uid, payload));
+            myRoot = new Node<T>(64,nodeCount);
+            myRoot.setChild(uid,  new Leaf<T>(uid, payload,mySize));
+            nodeCount++;
             mySize++;
         } else {
             if (leaf.myUid == uid) {
@@ -86,15 +104,17 @@ public class EBTree<T> {
                 leaf.myPayload = payload;
                 return oldPayload;
             } else {
-                int bit = 63-Long.numberOfLeadingZeros(uid ^ leaf.myUid);
+                long xored = uid ^ leaf.myUid; // findet hoechstes unterscheidungsbit
+                int bit = 63-Long.numberOfLeadingZeros(xored); // ergibt höchste
                 Node<T> parent = leaf.myParent;
                 while (parent.myBit < bit) parent = parent.myParent;
 
-                Node<T> node = new Node<T>(bit);
-                node.setChild(uid, new Leaf<T>(uid, payload));
+                Node<T> node = new Node<T>(bit,nodeCount);
+                node.setChild(uid, new Leaf<T>(uid, payload,mySize));
 
                 node.setChild(~uid, parent.getChild(uid));
                 parent.setChild(uid, node);
+                nodeCount++;
                 mySize++;
             }
         }
@@ -209,5 +229,43 @@ public class EBTree<T> {
 
     public String toString() {
         return "{"+myRoot+"}";
+    }
+
+    public void byLevel(){
+        Node<T> root = myRoot;
+        Queue<Node<T>> level  = new LinkedList<>();
+        level.add(root);
+         int lvl = 0;
+        while(!level.isEmpty()){
+            Node<T> node = level.poll();
+            System.out.println(node.nr + " " +"LVL "+lvl);
+            if(node.myZero instanceof Node)
+                level.add((Node<T>)node.myZero);
+            else if (node.myZero instanceof Leaf)
+                System.out.println("Leaf");
+            if(node.myOne instanceof Node)
+                level.add((Node<T>)node.myOne);
+            else if (node.myZero instanceof Leaf)
+                System.out.println("Leaf");
+
+             lvl = lvl +1;
+        }
+    }
+
+    public void printByLevel(){
+        printBreadthFristLike(0,myRoot);
+    }
+    void printBreadthFristLike(int lvl,Child<T> ele){
+        if(ele instanceof Leaf){
+            Leaf<T> leaf = (Leaf<T>)ele;
+            System.out.println("LEAF onLvL: "+lvl+" NR: " +leaf.nr+" payload"+leaf.myPayload);
+        }
+        else if (ele instanceof Node){
+            Node<T> node = (Node<T>)ele;
+            System.out.println("Node onLvL: "+lvl+" NR: " +node.nr);
+            printBreadthFristLike(lvl+1,node.myZero);
+            printBreadthFristLike(lvl+1,node.myOne);
+        }
+
     }
 }
