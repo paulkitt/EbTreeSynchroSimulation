@@ -24,7 +24,7 @@ public class EBTree<T> {
     Node<T> myRoot;
 
     static class Child<T> {
-        Node<T> myParent ;
+        Node<T> myParent;
     }
 
     static class Node<T> extends Child<T> {

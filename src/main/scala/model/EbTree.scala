@@ -1,5 +1,7 @@
 package src.main.scala.model
 
+import org.slf4j.LoggerFactory
+
 /**
  * Created by prototyp on 24.05.14.
  */
@@ -12,10 +14,14 @@ package src.main.scala.model
 class EbTree[T] {
   var mySize: Int = _
   var myRoot: Option[Node[T]] = None
+  val log = LoggerFactory.getLogger(classOf[EbTree[T]])
 
 
-  class Child[T] {
+// inner classes an trait
+//------------------------------------------------------------------------------------
+  trait Child[T] {
     var myParent: Node[T] = _
+    def getID():Long
   }
 
   /**
@@ -24,9 +30,9 @@ class EbTree[T] {
    * @tparam T The data type the tree is holding
    */
   case class Node[T](myBit: Int) extends Child[T] {
-
-    var myZero: Child[T] = _
-    var myOne: Child[T] = _
+    var myZero:     Child[T]  = _
+    var myOne:      Child[T]  = _
+    var nodeStateID:Long      = _
 
     //TODO understand/debug this funktion
     def bitOne(uid: Long): Boolean = ((uid & (1L << myBit)) != 0) && (myBit < 64)
@@ -45,6 +51,8 @@ class EbTree[T] {
     }
 
     override def toString(): String = "[" + myZero + "," + myOne + "]"
+
+    override def getID(): Long = nodeStateID
   }
 
   /**
@@ -55,8 +63,11 @@ class EbTree[T] {
    */
   case class Leaf[T](myUid: Long, var myPayload: T) extends Child[T] {
     override def toString(): String = "<" + myUid + ":" + myPayload + ">"
-  }
 
+    override def getID(): Long = myUid
+  }
+//Basic tree operations
+//------------------------------------------------------------------------------------
   /**
    * @return The size of the tree
    */
@@ -71,7 +82,7 @@ class EbTree[T] {
     def findLeafRec(cursor: Child[T]): Option[Leaf[T]] = cursor match {
       case x: Leaf[T] => Some(x)
       case y: Node[T] => findLeafRec(y.getChild(uid))
-      case _ => println("findleaf no leaf o Node found super strange"); None //TODO delete
+      case _ => log.warn("findleaf no leaf o Node found super strange"); None //TODO delete
     }
     if (myRoot.isDefined) findLeafRec(myRoot.get) else None
   }
@@ -83,6 +94,7 @@ class EbTree[T] {
         // leaf al ready exists alter payload
         val oldPayload: T = leaf.myPayload
         leaf.myPayload = payload
+        //calculateNodeIDs(leaf.myParent)//TODO remove
         Some(oldPayload)
       } else {
         val xored: Long = uid ^ leaf.myUid // findet hoechstes unterscheidungsbit
@@ -95,6 +107,7 @@ class EbTree[T] {
 
         node.setChild(~uid, parent.getChild(uid))
         parent.setChild(uid, node)
+        calculateNodeIDs(node)
         mySize += 1
         None
       }
@@ -107,7 +120,6 @@ class EbTree[T] {
     }
     //TODO should be null
   }
-
 
   /**
    * Returns the payload of a leaf to a given uid
@@ -132,13 +144,57 @@ class EbTree[T] {
       else {
         parent.setChild(uid, node.getChild(~uid))
       }
+      calculateNodeIDs(parent)
       mySize -= 1
       Some(leaf.myPayload)
     }
-    case _ => None //TODO should be null
+    case _ => log.error("Tree.remove : No leaf to remove Found!");None //TODO should be null
+  }
+//Synchronisation
+//------------------------------------------------------------------------------------
+  def calculateNodeIDs(node:Node[T]):Unit = node.myBit match{
+    case 64 => log.info("(calculateNodeIDs) reached RootNode")
+    case _  =>{
+      node.nodeStateID = node.myZero.getID()^node.myOne.getID()
+      calculateNodeIDs(node.myParent)
+    }
+  }
+//------------------------------------------------------------------------------------
+  def getDeltaByBit(nodeAddress:List[Int]):(Long,(Boolean,Long),(Boolean,Long)) ={
+    if(mySize>2){ //falls baum leer oder nur ein leaf null
+      getDeltaByBit(nodeAddress,myRoot.get.myZero)
+    }else{
+      log.warn("started Synchro on Empty tree");null
+    }
   }
 
+  def getDeltaByBit(bitAddress:List[Int],treeItem:Child[T]):(Long,(Boolean,Long),(Boolean,Long)) = bitAddress match{
+    case Nil => treeItem match{
+      case deltaRootNode:Node[T] => (deltaRootNode.getID(),(isLeaf(deltaRootNode.myZero),deltaRootNode.myZero.getID()),(isLeaf(deltaRootNode.myOne),deltaRootNode.myOne.getID()))
+      case _ => log.warn("");null
+    }
+    case x::xs => {
+      treeItem match {
+        case n: Node[T] => {
+          if (x == 0){
+            getDeltaByBit(xs, n.myZero)
+          }
+          else if (x == 1) {
+            getDeltaByBit(xs, n.myOne)
+          }else{log.warn("getDeltaByBit bitAddress error");null}
+        }
+        case _ => log.warn("getDeltaByBit case error!");null
+      }
+    }
+  }
 
+  def isLeaf(treeItem:Child[T]):Boolean = treeItem match{
+    case x:Leaf[T] => true
+    case _ => false
+  }
+
+//Move inside the tree
+//------------------------------------------------------------------------------------
   def firstKey(): Long = {
     if (myRoot.isEmpty) -1 // here we have the problem, that if -1 is the only single key, it will not work
     findLeaf(0L).get.myUid
@@ -219,15 +275,10 @@ class EbTree[T] {
     snapDown(uid - 1)
   }
 
-  def getDelta(){
-
-  }
 
 
   //TODO
-  // 1. understand bit magic
   // 2. get delta
-  // 3. xor upwoards
   //
 }
 

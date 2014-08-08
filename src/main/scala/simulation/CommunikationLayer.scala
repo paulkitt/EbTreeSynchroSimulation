@@ -33,22 +33,27 @@ class CommunikationLayer[T]() extends Actor{
 
     //basic  operations
     case Clock =>
-      ebTreeMessageQueue.head.foreach(x => x.dataObject.toActorRef ! x) // send all queued messages
-      ebTreeMessageQueue = ebTreeMessageQueue.tail//delete head
+      log.info("[Clock] received!")
+      if(!ebTreeMessageQueue.isEmpty){
+        ebTreeMessageQueue.head.foreach(x => x.dataObject.toActorRef ! x) // send all queued messages
+        ebTreeMessageQueue = ebTreeMessageQueue.tail//delete head
+      }
+
 
 
     case InsertNewObject(newObject: EbTreeDataObject[T])=>
+      log.info("[InsertNewObject] received! Placing item in queue")
       //insert new item the head of the queue
       ebTreeMessageQueue = List(ebTreeMessageQueue.head ::: List(InsertNewObject(newObject: EbTreeDataObject[T])) ) ::: ebTreeMessageQueue.tail
       //TODO insert failure => packet loss or delay
-      var len = ebTreeMessageQueue.head
-      var bla = len.length
-      //ebTreeMessageQueue = List(ebTreeMessageQueue.head) ::: List(List(2,2,2,2))
+
+
 
 
     //sync operations
     case GetDelta(delta:DeltaObject) =>
-        log.info(context.self.path.name+" [GetDelta] from "+delta.fromActorRef.get.path.name)
+        log.info("[GetDelta] from "+delta.fromActorRef.get.path.name)
+      delta.toActorRefInc ! GetDelta(delta:DeltaObject)
 
 
     case ReturnDelta(delta:DeltaObject) =>

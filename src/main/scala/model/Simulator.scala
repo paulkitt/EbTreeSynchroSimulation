@@ -17,6 +17,12 @@ object Simulator {
     tree.put(1024L,1234)
     tree.put(1025L,2222)
     tree.put(1026L,222)
+    tree.put(1033L,222)
+    tree.put(1032L,222)
+    tree.put(1045L,222)
+    tree.put(1800L,222)
+    tree.remove(1024L)
+    //tree.put(-1600L,666)
 
 print(tree.firstKey())
 print(tree.lastKey())

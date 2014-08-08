@@ -14,10 +14,7 @@ class AccessLayer[T](communicationLayer:ActorRef, actors:List[ActorRef]) {
 
 
   def insertNewObject(payload:T):Long = {
-
-    //TODO what should NodeId be???
-    val nodeID = actors(0).path.name.toCharArray().toList.map(x => x.toInt).fold(0)((a,i)=>a+i)
-    val id = genID(1234)
+    val id = genID()
     log.info("New Object "+payload+" with id:"+id)
     actors.foreach(x =>{
       val newObject: EbTreeDataObject[T] = EbTreeDataObject[T](id,id,payload,None,x)
@@ -29,8 +26,7 @@ class AccessLayer[T](communicationLayer:ActorRef, actors:List[ActorRef]) {
   def getObject(uId:Long,changeId:Long) = ???
 
 
-
-  def genID(nodeId:Int):Long = { // TODO WRITE test
+  def genID():Long = { // TODO WRITE test
     val range = randomRange to randomRange+10
     randomRange +=10
     val random = range(Random.nextInt(range.length))
@@ -38,8 +34,7 @@ class AccessLayer[T](communicationLayer:ActorRef, actors:List[ActorRef]) {
     val tmpBin = timestamp.toBinaryString
     val seqBin = toBinary(sequence)
     val rndBin = toBinary(random)
-    val ndBin =  toBinary(nodeId)
-    val binary =(timestamp.toBinaryString + toBinary(sequence) + toBinary(random) + toBinary(nodeId))
+    val binary =(timestamp.toBinaryString + toBinary(sequence) + toBinary(random))
     sequence+=1
     java.lang.Long.parseLong(binary,2)
     // TODO use byte array arrays bytebuffer instead of string
