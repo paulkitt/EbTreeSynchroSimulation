@@ -1,7 +1,7 @@
 package model
 
 import org.scalatest._
-import src.main.scala.model.EbTree
+import src.main.scala.model.{Child, Leaf, EbTree, Node}
 
 
 /**
@@ -18,33 +18,30 @@ class EbTreeTest extends FunSuite{
   }
   test("findLeaf is invoked on EbTree with one element"){
     val tree = new EbTree[Int]
-    tree.myRoot =  Some(tree.Node[Int](64))
-    tree.myRoot.get.setChild(1,tree.Leaf[Int](1,100))
+    tree.myRoot =  Some(Node[Int](64))
+    tree.myRoot.get.setChild(1,Leaf[Int](1,100))
 
     val leaf = tree.findLeaf(2)
     assert(leaf.isEmpty)
   }
 
 
-
-
-
   test("remove is invoked on EbTree with one leaf"){
     val tree = new EbTree[Int]
-    tree.myRoot =  Some(tree.Node[Int](64))
-    tree.myRoot.get.setChild(1,tree.Leaf[Int](1,100))
+    tree.myRoot =  Some(Node[Int](64))
+    tree.myRoot.get.setChild(1,Leaf[Int](1,100))
 
   }
 
 
   test("isLeaf is invoked with Node "){
     val tree = new EbTree[Int]
-    val treeItem:tree.Child[Int] = tree.Node[Int](10)
+    val treeItem:Child[Int] = Node[Int](10)
     assert(tree.isLeaf(treeItem) == false)
   }
   test("isLeaf is invoked with Leaf"){
     val tree = new EbTree[Int]
-    val treeItem:tree.Child[Int] = tree.Leaf[Int](1000,1)
+    val treeItem:Child[Int] = Leaf[Int](1000,1)
     assert(tree.isLeaf(treeItem) == true)
   }
   test("getDeltaByBit is invoked with correct bitAddress"){

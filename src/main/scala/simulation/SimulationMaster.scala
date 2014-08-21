@@ -3,17 +3,16 @@ package simulation
 import akka.actor.{ActorRef, Props, ActorSystem}
 import model._
 
-import scala.collection.immutable.HashMap
 import model.SetTreeActors
 import model.InsertNewObject
 import akka.event.Logging
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.Future
-import scala.concurrent.future
-import scala.concurrent.ExecutionContext.Implicits.global
+
+
 import scala.concurrent.duration._
 import scala.util.{Failure,Success}
-import src.main.scala.model.EbTree
+import src.main.scala.model.{Delta, EbTree}
 import akka.util.Timeout
 import akka.pattern.ask
 
@@ -30,9 +29,9 @@ object SimulationMaster extends App{
 
   val system = ActorSystem("EBTreeSimulation", ConfigFactory.load)
   val log = Logging.getLogger(system,this)
-  val communication = system.actorOf(Props[CommunikationLayer[Int]],"communication")
-  val actorList = List(system.actorOf(Props(new EbTreeDatabase[Int](communication)),"nodeA"),
-                       system.actorOf(Props(new EbTreeDatabase[Int](communication)),"nodeB"))
+  val communication = system.actorOf(Props[CommunikationLayer],"communication")
+  val actorList = List(system.actorOf(Props(new EbTreeDatabase[Int](communication )),"nodeA"),
+                       system.actorOf(Props(new EbTreeDatabase[Int](communication )),"nodeB"))
   val accessLayer:AccessLayer[Int] = new AccessLayer[Int](communication,actorList)
   // sends to each tree managing actor the references of the others that they can add routing information
   actorList.foreach(f=> f ! SetTreeActors(actorList))
@@ -55,8 +54,8 @@ object SimulationMaster extends App{
   //val IDTreesOfnodeA = getTreesOfCell(actorList.head)
   //val IDTreesOfnodeB = getTreesOfCell(actorList.tail.head)
   //diffTrees()
-  actorList(0) ! StartSynchronisation
-  actorList(1) ! StartSynchronisation
+  actorList(0) ! Synchronize(DeltaObject(Delta(0,64,-1,-1,-2),None,actorList(0)))
+  actorList(1) ! Synchronize(DeltaObject(Delta(0,64,-1,-1,-2),None,actorList(1)))
   //shutDownAllActors()
 
 
