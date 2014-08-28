@@ -222,10 +222,10 @@ class EbTree[T] {
 
     if(t.l == -1 && t.r == -1){ //Optimierung hier abkuerzen -> jump one one over lvl gap, possible loops
       var nextNode:Delta = Delta(t.id,node.myBit,node.myZero)
-      if(nextNode.to < t.to && node.myBit > t.to){//check if leaf??
-        nextNode = nextDelta(Delta(t.id,0,0,-1,-1))
-        nextNode = Delta(nextNode.id,node.myBit,-1,nextNode.l,nextNode.r)
-      }
+//      if(nextNode.to < t.to && node.myBit > t.to){ //check if leaf?? // Buggy optimisation
+//        nextNode = nextDelta(Delta(t.id,0,0,-1,-1))
+//        nextNode = Delta(nextNode.id,node.myBit,-1,nextNode.l,nextNode.r)
+//      }
       return nextNode
     }
 
@@ -233,8 +233,11 @@ class EbTree[T] {
       if (node.myZero.getID() != t.l) {
         return Delta(t.id, t.to, node.myZero); // A)
       } else if(node.myOne.getID() != t.r) {
-        return Delta(t.id+(1<<node.myBit), t.to, node.myOne); // B)
+        return Delta(t.id+(1L<<node.myBit), t.to, node.myOne); // B)
       }else{ // trees synchronized
+        log.info("[EbTree] trees synchronized! BitLvLs: " + node.myBit + "/" + t.to +
+          " left: "+node.myZero.getID() + "/" + t.l +
+          " right: " +node.myOne.getID() + "/" + t.r)
         return null
       }
     }
@@ -242,7 +245,7 @@ class EbTree[T] {
       return  Delta(t.id, t.from, node); // F) (0000,1,3,l,r)
     }
     else { // node.myBit < t.to
-      if (t.l == node.getID()) return new Delta(t.id+(1<<t.to), 0 , 0, -1, -1); // D) => found triangle go right take most left leaf
+      if (t.l == node.getID()) return new Delta(t.id+(1L<<t.to), 0 , 0, -1, -1); // D) => found triangle go right take most left leaf
       return  Delta(t.id, t.from, node.myBit, -1, -1); //E => request next left triangle
     }
   }
@@ -270,40 +273,6 @@ class EbTree[T] {
     case l:Leaf[T] => l
   }
 
-//first try
-//------------------------------------------------------------------------------------
-  def getDeltaByBit(nodeAddress:List[Int]):(Long,(Boolean,Long),(Boolean,Long)) ={
-    if(mySize>2){ //falls baum leer oder nur ein leaf null
-      getDeltaByBit(nodeAddress,myRoot.get.myZero)
-    }else{
-      log.warn("started Synchro on Empty tree");null
-    }
-  }
-
-  def getDeltaByBit(bitAddress:List[Int],treeItem:Child[T]):(Long,(Boolean,Long),(Boolean,Long)) = bitAddress match{
-    case Nil => treeItem match{
-      case deltaRootNode:Node[T] => (deltaRootNode.getID(),(isLeaf(deltaRootNode.myZero),deltaRootNode.myZero.getID()),(isLeaf(deltaRootNode.myOne),deltaRootNode.myOne.getID()))
-      case _ => log.warn("");null
-    }
-    case x::xs => {
-      treeItem match {
-        case n: Node[T] => {
-          if (x == 0){
-            getDeltaByBit(xs, n.myZero)
-          }
-          else if (x == 1) {
-            getDeltaByBit(xs, n.myOne)
-          }else{log.warn("getDeltaByBit bitAddress error");null}
-        }
-        case _ => log.warn("getDeltaByBit case error!");null
-      }
-    }
-  }
-
-  def isLeaf(treeItem:Child[T]):Boolean = treeItem match{
-    case x:Leaf[T] => true
-    case _ => false
-  }
 //Move inside the tree
 //------------------------------------------------------------------------------------
   def firstKey(): Long = {

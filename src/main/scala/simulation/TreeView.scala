@@ -54,7 +54,10 @@ object TreeView {
       val h: Int = getHeight
       g2.setColor(Color.white)
       g2.fillRect(0, 0, w, h)
-      paintNode(g2, null, myRoot, 0, 0, w, false)
+      if(myRoot!=null){
+        paintNode(g2, null, myRoot, 0, 0, w, false)
+      }
+
     }
 
     def paintNode(g2: Graphics2D, parent: NodeIf, node: NodeIf, x0: Int, y0: Int, w: Int, left: Boolean) {
@@ -82,6 +85,7 @@ object TreeView {
       else {
         g2.drawOval(x - radius, y - radius, 2 * radius, 2 * radius)
         g2.drawString(node.getLabel._1, x - radius + 2, y + radius - 2)
+        g2.drawString(node.getLabel._2, x - radius + 20, y + radius - 2)
       }
       val l: NodeIf = node.getLeft
       if (l != null) {

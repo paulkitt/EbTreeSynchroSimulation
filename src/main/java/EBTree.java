@@ -23,8 +23,53 @@ public class EBTree<T> {
     int nodeCount = 0;
     Node<T> myRoot;
 
-    static class Child<T> {
+    public interface NodeIf {
+        public boolean isLeaf();
+        public NodeIf getLeft();
+        public NodeIf getRight();
+        public String getLabel();
+    }
+    static class Child<T> implements NodeIf{
         Node<T> myParent;
+
+        @Override
+        public boolean isLeaf() {
+            if(this instanceof Leaf)
+                return true;
+            else
+                return false;
+        }
+
+        @Override
+        public NodeIf getLeft() {
+            if(this instanceof Node){
+                Node self = (Node) this;
+                return self.myZero;
+            }else{
+                return null;
+            }
+        }
+
+        @Override
+        public NodeIf getRight() {
+            if(this instanceof Node){
+                Node self = (Node) this;
+                return self.myOne;
+            }else{
+                return null;
+            }
+        }
+
+        @Override
+        public String getLabel() {
+            if(this instanceof Node){
+                Node self = (Node) this;
+                return ""+self.myBit;
+            }else{
+                Leaf self = (Leaf) this;
+                return ""+self.myUid;
+            }
+        }
     }
 
     static class Node<T> extends Child<T> {
