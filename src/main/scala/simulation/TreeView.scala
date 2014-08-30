@@ -34,7 +34,12 @@ object TreeView {
 //          i += 1; i - 1
 //        })
 //      }
-    List(1000L,1001L,1024L,1023L,1025L,1026L,1032L,1033L,1045L,1312L,1800L).foreach(x =>tree.put(x,""))
+    //List(1000L,1001L,1024L,1023L,1025L,1026L,1032L,1033L,1045L,1312L,1800L).foreach(x =>tree.put(x,""))
+    //List(1000L,1001L,1022L,1023L,1024L).foreach(x =>tree.put(x,""))
+    //List(1000L,1001L,1023L,1024L).foreach(x =>tree.put(x,""))
+    //List(1000L,1001L,1022L,1024L).foreach(x =>tree.put(x,""))
+    //List(1000L,1001L).foreach(x =>tree.put(x,""))
+    List(1022L,1023L).foreach(x =>tree.put(x,""))
     try {
       val view: TreeView = new TreeView("")
       view.setTree(tree.myRoot.get.myZero)
@@ -54,6 +59,14 @@ object TreeView {
       val h: Int = getHeight
       g2.setColor(Color.white)
       g2.fillRect(0, 0, w, h)
+      g2.setColor(Color.black)
+      g2.drawString("Baum B",40,45)
+//      g2.setColor(new Color(0x00, 0x99, 0x33))
+//      g2.drawString("Knoten Change ID",40,60)
+//      g2.setColor(Color.black)
+//      g2.drawString("Knoten Bitebene",40,75)
+//      g2.setColor(Color.blue)
+//      g2.drawString("Change ID",40,90)
       if(myRoot!=null){
         paintNode(g2, null, myRoot, 0, 0, w, false)
       }
@@ -61,6 +74,7 @@ object TreeView {
     }
 
     def paintNode(g2: Graphics2D, parent: NodeIf, node: NodeIf, x0: Int, y0: Int, w: Int, left: Boolean) {
+
       if (node.isLeaf) {
         g2.setColor(Color.blue)
       }
@@ -79,13 +93,15 @@ object TreeView {
         }
       }
       if (node.isLeaf) {
-        g2.drawRect(x - radius, y - radius, 2 * radius, 2 * radius)
-        g2.drawString(node.getLabel._1, x + radius + 2, y + radius - 2)
+        if(node.getLabel()._1=="10"||node.getLabel()._1=="1000"){g2.setColor(Color.red)}
+        g2.drawRect(x - radius, y - radius, 4 * radius, 2 * radius -2)
+        g2.drawString(node.getLabel._1, x - radius +4 , y + radius -4 )
       }
       else {
         g2.drawOval(x - radius, y - radius, 2 * radius, 2 * radius)
-        g2.drawString(node.getLabel._1, x - radius + 2, y + radius - 2)
-        g2.drawString(node.getLabel._2, x - radius + 20, y + radius - 2)
+        g2.drawString(node.getLabel._1, x - radius + 4, y + radius - 4)
+        g2.setColor(new Color(0x00, 0x99, 0x33))
+        g2.drawString(node.getLabel._2, x - radius + 24, y + radius - 4)
       }
       val l: NodeIf = node.getLeft
       if (l != null) {
@@ -99,7 +115,7 @@ object TreeView {
 
     var myRoot: NodeIf = null
     var levelDistance: Int = 50
-    var radius: Int = 9
+    var radius: Int = 10
   }
 
 }

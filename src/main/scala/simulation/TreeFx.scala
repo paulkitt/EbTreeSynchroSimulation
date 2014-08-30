@@ -97,7 +97,7 @@ object TreeFx {
       val y: Double = 50
       val treeRoot: Group = new Group
       val bg: Rectangle = new Rectangle(0, 0, w, h)
-      bg.setFill(Color.web("#406040"))
+      bg.setFill(Color.web("#FFFFFF")) //#406040
       getChildren.add(bg)
       if(myTree!=null){
         buildNodeView(treeRoot, myTree, 30, w - 60, y, ParentPos.None)
@@ -198,7 +198,7 @@ class TreeFx extends Application {
     val scene: Scene = new Scene(root)
     primaryStage.setScene(scene)
     myTree = new Tree("")
-    //myTree.randomTree
+    myTree.randomTree
     root.getChildren.add(myTree)
     primaryStage.show
     primaryStage.widthProperty.addListener(new ChangeListener[Number] {

@@ -60,8 +60,10 @@ object SimulationMaster extends App {
       val aLay1 = new AccessLayer[Int](communication, List(actorList(0)))
       val aLay2 = new AccessLayer[Int](communication, List(actorList(1)))
       val values: List[Int] = 1.to(numItems).toList
-      values.foreach(x => {aLay1.insertNewObject(x);
-                          aLay2.insertNewObject(x)})
+      values.foreach(x => {
+        aLay1.insertNewObject(x);
+        aLay2.insertNewObject(x)
+      })
       log.info("[SimulationMaster] Generation of Data complete!")
     }
     case 3 => {
@@ -84,8 +86,8 @@ object SimulationMaster extends App {
   Thread.sleep(2000)
   actorList.foreach(x => x ! PaintTree)
   val comp: TreeCompare[EbTreeDataObject[Int]] = new TreeCompare[EbTreeDataObject[Int]](actorList(0), actorList(1), system)
-  var diff:(Int,Int) = comp.compareTrees()
-  var oldDiff:(Int,Int) = (0,0)
+  var diff: (Int, Int) = comp.compareTrees()
+  var oldDiff: (Int, Int) = (0, 0)
   var run: Boolean = true
 
   while (run) {
@@ -96,57 +98,58 @@ object SimulationMaster extends App {
       run = false
     } else {
       var steps: Int = command.toInt
-                    val innerloop = new Breaks;
-                    innerloop.breakable {
-                      implicit val timeout = Timeout(2.second)
-                      implicit val ec = system.dispatcher
-                      while (steps > 0) {
-                        steps -= 1
-                        val synchroResponce: Future[Any] = communication ? StartSynchro(Some(actorList(1)), actorList(0))
-                        val answer = Await.result(synchroResponce,timeout.duration)
-                        answer.toString match{
-                          case "SynchroFinished" =>{
-                            if (diff != oldDiff) {
-                              actorList.foreach(x => x ! PaintTree)
-                              oldDiff == diff
-                              diff = comp.compareTrees()
-                              log.info("[SimulationMaster] old Tree diff: " + oldDiff)
-                              log.info("[SimulationMaster] Tree diff: " + diff)
-                            } else if (oldDiff == diff && diff !=(0,0)) {
-                              comp.printTreeItems()
-                              log.info("[SimulationMaster] Tree sync Stuck!")
-                              innerloop.break()
-                            } else if (diff ==(0, 0)) {
-                              log.info("[SimulationMaster] Tree sync complete!")
-                              innerloop.break()
-                            }
-                          }
-                          case _ =>
-                            log.error("[SimulationMaster] synchroResponce Failure!")
-                              innerloop.break()
-                        }
-                      }
-                    }
+      val innerloop = new Breaks;
+      innerloop.breakable {
+        implicit val timeout = Timeout(2.second)
+        implicit val ec = system.dispatcher
+        while (steps > 0) {
+          steps -= 1
+          val synchroResponce: Future[Any] = communication ? StartSynchro(Some(actorList(1)), actorList(0))
+          val answer = Await.result(synchroResponce, timeout.duration)
+          answer.toString match {
+            case "SynchroFinished" => {
+              if (diff != oldDiff) {
+                actorList.foreach(x => x ! PaintTree)
+                oldDiff == diff
+                diff = comp.compareTrees()
+                log.info("[SimulationMaster] old Tree diff: " + oldDiff)
+                log.info("[SimulationMaster] Tree diff: " + diff)
+              } else if (oldDiff == diff && diff !=(0, 0)) {
+                comp.printTreeItems()
+                log.info("[SimulationMaster] Tree sync Stuck!")
+                innerloop.break()
+              } else if (diff ==(0, 0)) {
+                log.info("[SimulationMaster] Tree sync complete!")
+                innerloop.break()
+              }
+            }
+            case _ =>
+              log.error("[SimulationMaster] synchroResponce Failure!")
+              innerloop.break()
+          }
+        }
+      }
+      
 
 
-//              val innerloop = new Breaks;
-//              innerloop.breakable {
-//                while(steps>0){
-//                  steps -= 1
-//                  communication ! StartSynchro(Some(actorList(1)),actorList(0))
-//                  Thread.sleep(100) //
-//                  actorList.foreach(x => x ! PaintTree)
-//                  oldDiff = diff
-//                  diff = comp.compareTrees()
-//                  log.info("[SimulationMaster] old Tree diff: "+oldDiff)
-//                  log.info("[SimulationMaster] Tree diff: "+diff)
-//                  if(oldDiff==diff){
-//                    comp.printTreeItems()
-//                    log.info("[SimulationMaster] Tree sync Stuck!")
-//                    innerloop.break()
-//                  }
-//                }
-//              }
+      //              val innerloop = new Breaks;
+      //              innerloop.breakable {
+      //                while(steps>0){
+      //                  steps -= 1
+      //                  communication ! StartSynchro(Some(actorList(1)),actorList(0))
+      //                  Thread.sleep(100) //
+      //                  actorList.foreach(x => x ! PaintTree)
+      //                  oldDiff = diff
+      //                  diff = comp.compareTrees()
+      //                  log.info("[SimulationMaster] old Tree diff: "+oldDiff)
+      //                  log.info("[SimulationMaster] Tree diff: "+diff)
+      //                  if(oldDiff==diff){
+      //                    comp.printTreeItems()
+      //                    log.info("[SimulationMaster] Tree sync Stuck!")
+      //                    innerloop.break()
+      //                  }
+      //                }
+      //              }
     }
   }
 
@@ -188,20 +191,15 @@ object SimulationMaster extends App {
 // 3. adress node bitwise
 
 //---------------------------------------------------------------------------------------
-//TODO select logging pattern
-//TODO implement tree id xor
 
 //TODO
-//TODO implement tree diff: logical and graphical
+// implement delete
 
 //TODO implement better simulation master(with key stop/start)
 
 //TODO actor failure handling
-//TODO ask for newest version of ebTree
 
 
-//TODO write tests , akka-testkit
 //TODO write paper implementation
 //TODO write doku
 
-// implement clock actor

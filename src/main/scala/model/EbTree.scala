@@ -238,6 +238,7 @@ class EbTree[T] {
         log.info("[EbTree] trees synchronized! BitLvLs: " + node.myBit + "/" + t.to +
           " left: "+node.myZero.getID() + "/" + t.l +
           " right: " +node.myOne.getID() + "/" + t.r)
+        //check ob oberster Knoten sonst log error
         return null
       }
     }

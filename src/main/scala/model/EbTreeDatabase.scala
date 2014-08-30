@@ -80,7 +80,7 @@ class EbTreeDatabase[T](communication: ActorRef) extends Actor {
   var uIdTree = new EbTree[EbTreeDataObject[T]]
   var changeIdTree = new EbTree[EbTreeDataObject[T]]
   //var treeV:TreeFx = new TreeFx("")
- var treeV:TreeView = new TreeView("")
+ //var treeV:TreeView = new TreeView("")
   val log = Logging(context.system, this)
 
 
@@ -93,7 +93,7 @@ class EbTreeDatabase[T](communication: ActorRef) extends Actor {
 
     case PaintTree =>
      //treeV.setTree(changeIdTree.myRoot.get.myZero)
-     treeV.setTree(changeIdTree.myRoot.get.myZero)
+     //treeV.setTree(changeIdTree.myRoot.get.myZero)
 
     //basic tree operations
     case obj:InsertNewObject[T]=>
