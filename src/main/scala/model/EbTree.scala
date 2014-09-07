@@ -1,7 +1,7 @@
 package src.main.scala.model
 
 import org.slf4j.LoggerFactory
-
+import simulation.EventLogging
 
 
 /**
@@ -231,26 +231,35 @@ class EbTree[T] {
 
     if (node.myBit == t.to) { // same bit lvl diff childs
       if (node.myZero.getID() != t.l) {
-        return Delta(t.id, t.to, node.myZero); // A)
+        return Delta(t.id, t.to, node.myZero) // A)
       } else if(node.myOne.getID() != t.r) {
-        return Delta(t.id+(1L<<node.myBit), t.to, node.myOne); // B)
+        return Delta(t.id+(1L<<node.myBit), t.to, node.myOne) // B)
       }else{ // trees synchronized
         log.info("[EbTree] trees synchronized! BitLvLs: " + node.myBit + "/" + t.to +
+          "from: "+node.myParent.myBit + "/" + t.from +
           " left: "+node.myZero.getID() + "/" + t.l +
           " right: " +node.myOne.getID() + "/" + t.r)
         //check ob oberster Knoten sonst log error
-        return null
+        if(node.myParent.myBit==64){
+          return null
+        }else{
+          EventLogging.addEvent("[EbTree] Sync Error: "+ node.myBit + "/" + t.to +
+            "from: "+node.myParent.myBit + "/" + t.from +
+            " left: "+node.myZero.getID() + "/" + t.l +
+            " right: " +node.myOne.getID() + "/" + t.r)
+         return null
+        }
       }
     }
     else if (node.myBit > t.to) {        // flip sides
       return  Delta(t.id, t.from, node); // F) (0000,1,3,l,r)
     }
     else { // node.myBit < t.to
-      if (t.l == node.getID()) return new Delta(t.id+(1L<<t.to), 0 , 0, -1, -1); // D) => found triangle go right take most left leaf
-      return  Delta(t.id, t.from, node.myBit, -1, -1); //E => request next left triangle
+      if (t.l == node.getID()) return new Delta(t.id+(1L<<t.to), 0 , 0, -1, -1) // D) => found triangle go right take most left leaf
+      return  Delta(t.id, t.from, node.myBit, -1, -1) //E => request next left triangle
     }
   }
-  def checkIfUniqueLeafisFound(t:Delta):Delta = {
+  def checkIfLostLeafIsFound(t:Delta):Delta = {
     val leaf = findLeaf(t.l)
     if(leaf.get.getID()==t.l){ // leaf found search for sub tree
       lazy val node:Node[T] = getNodeAboveLeaf(myRoot.get.myZero)

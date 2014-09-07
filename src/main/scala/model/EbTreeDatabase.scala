@@ -65,7 +65,8 @@ case object PaintTree
 
 case object GetChangeIdTreeRequest
 
-case object GetuIdTreeRequest
+case object  GetuIdTreeRequest
+
 
 case class Tree[T](tree: EbTree[T])
 
@@ -111,7 +112,14 @@ class EbTreeDatabase[T](communication: ActorRef) extends Actor {
       case _ =>
     }
 
-    case removedObject:RemoveObject[T] =>
+    case delObj:RemoveObject[T] => uIdTree.get(delObj.removedObject.uId) match {
+      case Some(oldObJ: EbTreeDataObject[T]) =>
+        uIdTree.remove(oldObJ.uId) // get old object from uidTree and alter payload
+        uIdTree.put(delObj.removedObject.uId, delObj.removedObject)
+        changeIdTree.remove(oldObJ.changeId) // remove old changeId from changeIDTree
+        changeIdTree.put(delObj.removedObject.changeId, delObj.removedObject) // insert new ChangeId
+      case _ => log.info("{" + self.path.name + "}" +"[RemoveObject] object not found!")
+    }
     //TODO  set payload null add new ChangeID
 
     case get:GetObject[T] =>
@@ -121,11 +129,9 @@ class EbTreeDatabase[T](communication: ActorRef) extends Actor {
     case sync:Synchronize => // start synchronisation with sending first delta
       if (changeIdTree.size() > 1) {
         log.info("{" + self.path.name + "}" + "[Synchronize]! Delta: "+sync.delta+"! Syncing with " +  sync.fromActorRef.get.path.name)
-
         if (sync.delta.isLeaf()) {
-          val uniqueLeaf: Delta = changeIdTree.checkIfUniqueLeafisFound(sync.delta)
-          if (sync.delta.l == uniqueLeaf.l) { //
-            //receive unique leaf id! request all leaf data
+          val uniqueLeaf: Delta = changeIdTree.checkIfLostLeafIsFound(sync.delta)
+          if (sync.delta.l == uniqueLeaf.l) { //receive unique leaf id! request all leaf data
             communication ! RequestEbTreeDataObject(sync.delta, Some(self), sync.fromActorRef.get)
           } else {
             // found subbranch at leaf position with leaf inside => unique leaf most left in sub branch
@@ -176,8 +182,6 @@ class EbTreeDatabase[T](communication: ActorRef) extends Actor {
         changeIdTree.put(checkL.data.changeId, checkL.data)
         communication ! SynchroFinished
     }
-    //todo send finish synchro
-
 
     //TODO synchronized delete of empty objects
 
@@ -192,6 +196,7 @@ class EbTreeDatabase[T](communication: ActorRef) extends Actor {
 
     case ShutDownActorRequest =>
       context.system.shutdown()
+
     case _ => println("TreeActor wrong message received")
   }
 }

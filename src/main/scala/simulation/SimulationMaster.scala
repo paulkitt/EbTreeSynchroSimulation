@@ -34,10 +34,10 @@ object SimulationMaster extends App {
 
   val system = ActorSystem("EBTreeSimulation", ConfigFactory.load)
   val log = Logging.getLogger(system, this)
-  val communication = system.actorOf(Props(new CommunikationLayer(0)), "communication")
+  val communication = system.actorOf(Props(new CommunicationLayer(0,0)), "communication")
   val actorList = List(system.actorOf(Props(new EbTreeDatabase[Int](communication)), "nodeA"),
     system.actorOf(Props(new EbTreeDatabase[Int](communication)), "nodeB"))
-  val accessLayer: AccessLayer[Int] = new AccessLayer[Int](communication, actorList)
+  val accessLayer: AccessLayer[Int] = new AccessLayer[Int](communication, actorList,64)
   //sends to each tree managing actor the references of the others that they can add routing information
   actorList.foreach(f => f ! SetTreeActors(actorList))
   // send all tree actor references to the communication layer
@@ -57,8 +57,10 @@ object SimulationMaster extends App {
     case 2 => {
       println("[SimulationMaster] => Random Item Simulation! Number of Elements:")
       val numItems = readLine().toInt
-      val aLay1 = new AccessLayer[Int](communication, List(actorList(0)))
-      val aLay2 = new AccessLayer[Int](communication, List(actorList(1)))
+      println("[SimulationMaster] => Random Item Simulation! KeyLength(64/48/40):")
+      val keyLen = readLine().toInt
+      val aLay1 = new AccessLayer[Int](communication, List(actorList(0)),keyLen)
+      val aLay2 = new AccessLayer[Int](communication, List(actorList(1)),keyLen)
       val values: List[Int] = 1.to(numItems).toList
       values.foreach(x => {
         aLay1.insertNewObject(x);
@@ -110,7 +112,7 @@ object SimulationMaster extends App {
             case "SynchroFinished" => {
               if (diff != oldDiff) {
                 actorList.foreach(x => x ! PaintTree)
-                oldDiff == diff
+                oldDiff = diff
                 diff = comp.compareTrees()
                 log.info("[SimulationMaster] old Tree diff: " + oldDiff)
                 log.info("[SimulationMaster] Tree diff: " + diff)
@@ -129,38 +131,11 @@ object SimulationMaster extends App {
           }
         }
       }
-      
-
-
-      //              val innerloop = new Breaks;
-      //              innerloop.breakable {
-      //                while(steps>0){
-      //                  steps -= 1
-      //                  communication ! StartSynchro(Some(actorList(1)),actorList(0))
-      //                  Thread.sleep(100) //
-      //                  actorList.foreach(x => x ! PaintTree)
-      //                  oldDiff = diff
-      //                  diff = comp.compareTrees()
-      //                  log.info("[SimulationMaster] old Tree diff: "+oldDiff)
-      //                  log.info("[SimulationMaster] Tree diff: "+diff)
-      //                  if(oldDiff==diff){
-      //                    comp.printTreeItems()
-      //                    log.info("[SimulationMaster] Tree sync Stuck!")
-      //                    innerloop.break()
-      //                  }
-      //                }
-      //              }
+      log.info("[SimulationMaster] Print Event Logg!")
+      EventLogging.events.foreach(x => log.info("[SimulationMaster] " + x._1 + ": " + x._2))
     }
   }
 
-
-  //  sendClock()
-  //
-  //  //val IDTreesOfnodeA = getTreesOfCell(actorList.head)
-  //  //val IDTreesOfnodeB = getTreesOfCell(actorList.tail.head)
-  //  //diffTrees()
-  //  //shutDownAllActors()
-  //
   def sendClock() {
     if (Constant.STEP_CLOCK_KEY_WISE) {
       log.info("Waiting for key to send Clock")
@@ -172,24 +147,11 @@ object SimulationMaster extends App {
     }
     communication ! Clock
   }
-
-  //  def diffTrees(){
-  //    val treeComp = new TreeCompare[EbTreeDataObject[Int]](actorList.head,actorList.tail.head,system)
-  //    treeComp.compareTrees
-  //  }
-  //
-  //  def shutDownAllActors(){
-  //    communication!ShutDownActorRequest
-  //    actorList.foreach(x => x !ShutDownActorRequest)
-  //  }
+    def shutDownAllActors(){
+      communication!ShutDownActorRequest
+      actorList.foreach(x => x !ShutDownActorRequest)
+    }
 }
-
-//class SimulationMaster
-//Questions:
-// 1. Bilden der uID/ChangeID in Access Layer
-// 2. Bilden NodeIds EBTree.122
-// 3. adress node bitwise
-
 //---------------------------------------------------------------------------------------
 
 //TODO

@@ -4,7 +4,7 @@ import akka.testkit.{TestActorRef, ImplicitSender, DefaultTimeout, TestKit}
 import akka.actor.{ActorRef, ActorSystem}
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{BeforeAndAfterAll, Matchers, FunSuiteLike}
-import simulation.{Clock, CommunikationLayer, TreeCompare}
+import simulation.{Clock, CommunicationLayer, TreeCompare}
 import scala.concurrent.Future
 import akka.pattern.ask
 import scala.util.{Failure, Success}
@@ -26,7 +26,7 @@ with DefaultTimeout with ImplicitSender with FunSuiteLike with Matchers with Bef
 
   test("Synchro with case B"){
 
-    val communication = TestActorRef(new CommunikationLayer(0))
+    val communication = TestActorRef(new CommunicationLayer(0,0))
 
     val db1 = TestActorRef(new EbTreeDatabase[Int](communication))
     val db1Actor = db1.underlyingActor
@@ -53,7 +53,7 @@ with DefaultTimeout with ImplicitSender with FunSuiteLike with Matchers with Bef
   }
 
   test("Synchro of LostUpdate"){
-    val communication = TestActorRef(new CommunikationLayer(0))
+    val communication = TestActorRef(new CommunicationLayer(0,0))
     val idList = List(1000L, 1001L, 1023L,1024L, 1025L, 1800L)
 
     val db1 = TestActorRef(new EbTreeDatabase[Int](communication))
@@ -86,7 +86,7 @@ with DefaultTimeout with ImplicitSender with FunSuiteLike with Matchers with Bef
 
   test("Synchro with case B*"){
 
-    val communication = TestActorRef(new CommunikationLayer(0))
+    val communication = TestActorRef(new CommunicationLayer(0,0))
 
     val db1 = TestActorRef(new EbTreeDatabase[Int](communication))
     val db1Actor = db1.underlyingActor
@@ -113,7 +113,7 @@ with DefaultTimeout with ImplicitSender with FunSuiteLike with Matchers with Bef
   }
   test("Synchro with case B**"){
 
-    val communication = TestActorRef(new CommunikationLayer(0))
+    val communication = TestActorRef(new CommunicationLayer(0,0))
 
     val db1 = TestActorRef(new EbTreeDatabase[Int](communication))
     val db1Actor = db1.underlyingActor
@@ -140,7 +140,7 @@ with DefaultTimeout with ImplicitSender with FunSuiteLike with Matchers with Bef
   }
   test("Synchro with case B***"){
 
-    val communication = TestActorRef(new CommunikationLayer(0))
+    val communication = TestActorRef(new CommunicationLayer(0,0))
 
     val db1 = TestActorRef(new EbTreeDatabase[Int](communication))
     val db1Actor = db1.underlyingActor
@@ -167,7 +167,7 @@ with DefaultTimeout with ImplicitSender with FunSuiteLike with Matchers with Bef
   }
   test("Synchro with case G->E"){
 
-    val communication = TestActorRef(new CommunikationLayer(0))
+    val communication = TestActorRef(new CommunicationLayer(0,0))
 
     val db1 = TestActorRef(new EbTreeDatabase[Int](communication))
     val db1Actor = db1.underlyingActor
@@ -191,7 +191,7 @@ with DefaultTimeout with ImplicitSender with FunSuiteLike with Matchers with Bef
   }
   test("Synchro with case G->E*"){
 
-    val communication = TestActorRef(new CommunikationLayer(0))
+    val communication = TestActorRef(new CommunicationLayer(0,0))
 
     val db1 = TestActorRef(new EbTreeDatabase[Int](communication))
     val db1Actor = db1.underlyingActor
@@ -215,7 +215,7 @@ with DefaultTimeout with ImplicitSender with FunSuiteLike with Matchers with Bef
   }
   test("Synchro with case G->E**"){
 
-    val communication = TestActorRef(new CommunikationLayer(0))
+    val communication = TestActorRef(new CommunicationLayer(0,0))
 
     val db1 = TestActorRef(new EbTreeDatabase[Int](communication))
     val db1Actor = db1.underlyingActor
@@ -239,7 +239,7 @@ with DefaultTimeout with ImplicitSender with FunSuiteLike with Matchers with Bef
   }
   test("Synchro with case G->E***"){
 
-    val communication = TestActorRef(new CommunikationLayer(0))
+    val communication = TestActorRef(new CommunicationLayer(0,0))
 
     val db1 = TestActorRef(new EbTreeDatabase[Int](communication))
     val db1Actor = db1.underlyingActor
@@ -265,7 +265,7 @@ with DefaultTimeout with ImplicitSender with FunSuiteLike with Matchers with Bef
 
   test("Synchro with case G->E****"){
 
-    val communication = TestActorRef(new CommunikationLayer(0))
+    val communication = TestActorRef(new CommunicationLayer(0,0))
 
     val db1 = TestActorRef(new EbTreeDatabase[Int](communication))
     val db1Actor = db1.underlyingActor
@@ -288,7 +288,7 @@ with DefaultTimeout with ImplicitSender with FunSuiteLike with Matchers with Bef
     assert(diff._2==0)
   }
   test("Synchro with both side diff"){
-    val communication = TestActorRef(new CommunikationLayer(0))
+    val communication = TestActorRef(new CommunicationLayer(0,0))
 
     val db1 = TestActorRef(new EbTreeDatabase[Int](communication))
     val db1Actor = db1.underlyingActor
@@ -311,15 +311,15 @@ with DefaultTimeout with ImplicitSender with FunSuiteLike with Matchers with Bef
     assert(diff._2==0)
   }
   test("Synchro random diffs"){
-    val communication = TestActorRef(new CommunikationLayer(0))
+    val communication = TestActorRef(new CommunicationLayer(0,0))
 
     val db1 = TestActorRef(new EbTreeDatabase[Int](communication))
     val db1Actor = db1.underlyingActor
-    val aLay1 = new AccessLayer[Int](communication,List(db1))
+    val aLay1 = new AccessLayer[Int](communication,List(db1),64)
 
     val db2 = TestActorRef(new EbTreeDatabase[Int](communication))
     val db2Actor = db2.underlyingActor
-    val aLay2 = new AccessLayer[Int](communication,List(db2))
+    val aLay2 = new AccessLayer[Int](communication,List(db2),64)
 
     communication ! SetTreeActors(List(db1,db2))
 

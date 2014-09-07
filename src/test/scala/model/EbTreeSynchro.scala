@@ -137,14 +137,14 @@ class EbTreeSynchro extends FunSuite {
     loop.breakable {
       while (true) {
         if (reply.isLeaf()) {
-          reply = treeA.checkIfUniqueLeafisFound(reply)
+          reply = treeA.checkIfLostLeafIsFound(reply)
           loop.break()
         }
         else {
           reply = treeA.nextDelta(reply)
         }
         if (reply.isLeaf()) {
-          reply = treeB.checkIfUniqueLeafisFound(reply)
+          reply = treeB.checkIfLostLeafIsFound(reply)
           loop.break()
         } else {
           reply = treeB.nextDelta(reply)

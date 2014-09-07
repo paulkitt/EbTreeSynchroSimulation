@@ -32,15 +32,15 @@ class TreeCompare[T](system:ActorSystem) {
   def compareStructures() = ???
 
   def printTreeItems(){
-    val a:List[Long] = printTreeItems(firstDB._2,firstDB._2.firstKey())
-    val b:List[Long] = printTreeItems(secondDB._2,secondDB._2.firstKey())
+    val a:List[Long] = printTreeItems(firstDB._2,firstDB._2.firstKey(),List())
+    val b:List[Long] = printTreeItems(secondDB._2,secondDB._2.firstKey(),List())
     log.info("TreeA: "+ a)
     log.info("TreeB: "+ b)
     log.info("DIFF A B: "+a.filterNot(b.contains))
   }
-  def printTreeItems(tree:EbTree[T],key:Long):List[Long] = key match{
-    case 0 => List()
-    case x => x :: printTreeItems(tree,tree.next(key))
+  def printTreeItems(tree:EbTree[T],key:Long,items:List[Long]):List[Long] = key match{
+    case 0 => items
+    case x =>  printTreeItems(tree,tree.next(key),x :: items)
   }
 
 

@@ -14,7 +14,7 @@ import scala.util.Random
 /**
  * Created by prototyp on 19.06.14.
  */
-class CommunikationLayer(var pktLossPsbl:Int) extends Actor{
+class CommunicationLayer(var pktLossPsbl:Int, pktDeley:Int) extends Actor{
   var cells:List[ActorRef] = _ // HashMap name> actRef
   var ebTreeMessageQueue:List[List[EBTreeMessage]] = List(List()) //first list cells, second list clock slots, third list messages for each time slot
 //  var ebTreeMessageQueue1:List[List[EBTreeMessage]] = List(List())
@@ -45,17 +45,25 @@ class CommunikationLayer(var pktLossPsbl:Int) extends Actor{
     case x:InsertNewObject[_] => //insert new item the head of the queue
       if(!isLost()){
         //log.info("[InsertNewObject] ! Placing item in queue")
-        ebTreeMessageQueue = List(ebTreeMessageQueue.head ::: List(x) ) ::: ebTreeMessageQueue.tail
+        if(!isDelayed()){
+          ebTreeMessageQueue = List(ebTreeMessageQueue.head ::: List(x) ) ::: ebTreeMessageQueue.tail
+        }else{
+          ebTreeMessageQueue = List(ebTreeMessageQueue.head) ::: List(ebTreeMessageQueue.tail.head ::: List(x) ) ::: ebTreeMessageQueue.tail.tail
+        }
+
       }else{
         log.info("[InsertNewObject] ! Item Lost!")
       }
-      //TODO insert failure => packet loss or delay
 
     case x:UpdateObject[_] =>
       //insert new item the head of the queue
       if(!isLost()){
         log.info("[UpdateObject] received! Placing item in queue")
-        ebTreeMessageQueue = List(ebTreeMessageQueue.head ::: List(x) ) ::: ebTreeMessageQueue.tail
+        if(!isDelayed()){
+          ebTreeMessageQueue = List(ebTreeMessageQueue.head ::: List(x) ) ::: ebTreeMessageQueue.tail
+        }else{
+          ebTreeMessageQueue = List(ebTreeMessageQueue.head) ::: List(ebTreeMessageQueue.tail.head ::: List(x) ) ::: ebTreeMessageQueue.tail.tail
+        }
       }
 
     //sync operations
@@ -89,6 +97,12 @@ class CommunikationLayer(var pktLossPsbl:Int) extends Actor{
     case x:Int if(x == 0) => false
     case x:Int if(x <= pktLossPsbl) => true
     case x:Int if(x > pktLossPsbl) => false
+  }
+
+  def isDelayed():Boolean = Random.nextInt(101) match {
+    case x:Int if(x < pktDeley) => true
+    case x:Int if(x > pktDeley) => false
+    case _=>  false
   }
 
 }

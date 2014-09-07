@@ -7,14 +7,14 @@ import org.slf4j.LoggerFactory
 /**
  * Created by prototyp on 23.06.14.
  */
-class AccessLayer[T](communicationLayer:ActorRef, actors:List[ActorRef]) {
+class AccessLayer[T](communicationLayer:ActorRef, actors:List[ActorRef],keyLength:Int) {
   var randomRange:Int = 0
   var sequence:Int = 0
   val log = LoggerFactory.getLogger(classOf[AccessLayer[T]])
 
 
   def insertNewObject(payload:T):Long = {
-    val id = genID()
+    val id = getID()
     //log.info("New Object "+payload+" with id:"+id)
     actors.foreach(x =>{
       val newObject: EbTreeDataObject[T] = EbTreeDataObject[T](id,id,payload)
@@ -23,7 +23,7 @@ class AccessLayer[T](communicationLayer:ActorRef, actors:List[ActorRef]) {
     id
   }
   def updateObject(uId:Long,newPayload:T):Long = {
-    val newChangeID = genID()
+    val newChangeID = getID()
     //log.info("New Object "+newPayload+" with id:"+newChangeID)
     actors.foreach(x =>{
       val newObject: EbTreeDataObject[T] = EbTreeDataObject[T](uId,newChangeID,newPayload)
@@ -35,29 +35,53 @@ class AccessLayer[T](communicationLayer:ActorRef, actors:List[ActorRef]) {
   def removeObject(id:Long) = ???
   def getObject(uId:Long,changeId:Long) = ???
 
+  def getID():Long = keyLength match{
+    case 40 => genID40
+    case 48 => genID48
+    case 64 => genID64
+  }
 
-  def genID():Long = {
-    val range = randomRange to randomRange+10
-    randomRange +=10
-    val random = range(Random.nextInt(range.length))
+  def genID64():Long = {
+
     val timestamp = (System.currentTimeMillis / 100).toBinaryString
     val seqBin = toBinary(sequence,7)
     val rndBin = toBinary(Random.nextInt(32767),15)
 
     val binary =(timestamp + seqBin  +  rndBin)
-    //val binary =( toBinary(sequence) + toBinary(random))
     sequence+=1
     if(sequence>=255){
       sequence =0
     }
-
-    log.info("[AccessLayer] bin len: "+binary.length )
     if(timestamp.length>39 || seqBin.length>8 || rndBin.length>16){
-      log.error("[AccessLayer]: TmpLen: "+timestamp.length+" seqLen: "+seqBin.length+" rndBinLen: "+rndBin.length)
+      log.error("[AccessLayer] 64: TmpLen: "+timestamp.length+" seqLen: "+seqBin.length+" rndBinLen: "+rndBin.length)
       log.error("[AccessLayer] Binary Error")
     }
     java.lang.Long.parseLong(binary,2)
-    // TODO use byte array arrays bytebuffer instead of string
+  }
+
+  def genID48():Long = {
+    val timestamp = (System.currentTimeMillis / 1000).toBinaryString
+    val rndBin = toBinary(Random.nextInt(32767),15)
+
+    val binary =(timestamp +  rndBin)
+    //val binary =( toBinary(sequence) + toBinary(random))
+
+    if(timestamp.length>32 || rndBin.length>16){
+      log.error("[AccessLayer] 48: TmpLen: "+timestamp.length+" rndBinLen: "+rndBin.length)
+      log.error("[AccessLayer] Binary Error")
+    }
+    java.lang.Long.parseLong(binary,2)
+  }
+
+  def genID40():Long = {
+    val timestamp = (System.currentTimeMillis / 1000).toBinaryString
+    val rndBin = toBinary(Random.nextInt(255),7)
+    val binary =(timestamp + rndBin)
+    if(timestamp.length>32 ||  rndBin.length>8){
+      log.error("[AccessLayer] 40: TmpLen: "+timestamp.length+" rndBinLen: "+rndBin.length)
+      log.error("[AccessLayer] Binary Error")
+    }
+    java.lang.Long.parseLong(binary,2)
   }
 
   def toBinary(i: Int, digits: Int):String =
