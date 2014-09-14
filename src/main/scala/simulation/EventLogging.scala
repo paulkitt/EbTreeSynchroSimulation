@@ -16,5 +16,7 @@ object EventLogging {
 
   def getEvent(event:String):Option[Int] = events.get(event)
 
+  def delEvent(event:String):Option[Int] = events.remove(event)
+
   def getAllAsTuples() = ???
 }

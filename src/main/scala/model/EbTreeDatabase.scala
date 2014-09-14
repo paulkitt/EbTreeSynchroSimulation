@@ -1,9 +1,10 @@
 package model
 
 import akka.actor.{ActorRef, Actor}
-import simulation.{TreeFx, TreeView, EventLogging}
+import simulation.{TreeFx, TreeView, EventLogging, Constant}
 import src.main.scala.model.{Delta, EbTree}
 import akka.event.Logging
+
 
 
 // define parent class with roting information
@@ -35,23 +36,26 @@ case class RemoveObject[T](removedObject: EbTreeDataObject[T], from:Option[Actor
 
 case class GetObject[T](id:Long)
 
+case object ClearTree
+
 //----------------------------------------------------------------------------------------------
 // Synchro
 
 
-case class StartSynchro(from:Option[ActorRef], to:ActorRef) extends EBTreeMessage {
+case class StartSynchroCycle(from:Option[ActorRef], to:ActorRef) extends EBTreeMessage {
 fromActorRef = from; toActorRef = to
 }
 
-case object SynchroFinished{
-  override def toString = {"SynchroFinished"}
+case object SynchroCycleFinished{
+  override def toString = {"SynchroCycleFinished"}
 }
+case object SynchroFinished
 
 case class Synchronize(delta: Delta,from:Option[ActorRef], to:ActorRef) extends EBTreeMessage {
   fromActorRef = from; toActorRef = to
 }
 
-case class RequestEbTreeDataObject(delta: Delta, from:Option[ActorRef], to:ActorRef) extends EBTreeMessage{
+case class RequestEbTreeDataObject(reqChangeId: Long, from:Option[ActorRef], to:ActorRef) extends EBTreeMessage{
   fromActorRef = from; toActorRef = to
 }
 
@@ -81,7 +85,7 @@ class EbTreeDatabase[T](communication: ActorRef) extends Actor {
   var uIdTree = new EbTree[EbTreeDataObject[T]]
   var changeIdTree = new EbTree[EbTreeDataObject[T]]
   //var treeV:TreeFx = new TreeFx("")
- //var treeV:TreeView = new TreeView("")
+  var treeV:TreeView =  null
   val log = Logging(context.system, this)
 
 
@@ -93,18 +97,24 @@ class EbTreeDatabase[T](communication: ActorRef) extends Actor {
       cells.foreach(x => log.info("{" + self.path.name + "}" + ": Init with Actor:" + x.path.name))
 
     case PaintTree =>
-     //treeV.setTree(changeIdTree.myRoot.get.myZero)
-     //treeV.setTree(changeIdTree.myRoot.get.myZero)
+      if(Constant.GRAPHIC_ACTIVE && treeV==null)
+        treeV = new TreeView("")
+      if(changeIdTree.myRoot!=None && Constant.GRAPHIC_ACTIVE)treeV.setTree(changeIdTree.myRoot.get.myZero)
+
+    case ClearTree =>
+      uIdTree = new EbTree[EbTreeDataObject[T]]
+      changeIdTree = new EbTree[EbTreeDataObject[T]]
+
 
     //basic tree operations
     case obj:InsertNewObject[T]=>
-      log.info("{" + self.path.name + "}" + "[InsertNewObject]! new object:" + obj.newObject.uId + ", " + obj.newObject.changeId + ", " + obj.newObject.payload)
+      if(Constant.LOG)log.info("{" + self.path.name + "}" + "[InsertNewObject]! new object:" + obj.newObject.uId + ", " + obj.newObject.changeId + ", " + obj.newObject.payload)
       uIdTree.put(obj.newObject.uId, obj.newObject)
       changeIdTree.put(obj.newObject.changeId, obj.newObject)
 
     case uptObj:UpdateObject[T] => uIdTree.get(uptObj.changedObject.uId) match {
       case Some(oldObJ: EbTreeDataObject[T]) =>
-        log.info("{" + self.path.name + "}" + "[UpdateObject]! update object:" + uptObj.changedObject.uId + ", " + uptObj.changedObject.changeId + ", " + uptObj.changedObject.payload)
+        if(Constant.LOG)log.info("{" + self.path.name + "}" + "[UpdateObject]! update object:" + uptObj.changedObject.uId + ", " + uptObj.changedObject.changeId + ", " + uptObj.changedObject.payload)
         uIdTree.remove(oldObJ.uId) // get old object from uidTree and alter payload
         uIdTree.put(uptObj.changedObject.uId, uptObj.changedObject)
         changeIdTree.remove(oldObJ.changeId) // remove old changeId from changeIDTree
@@ -128,11 +138,12 @@ class EbTreeDatabase[T](communication: ActorRef) extends Actor {
 
     case sync:Synchronize => // start synchronisation with sending first delta
       if (changeIdTree.size() > 1) {
-        log.info("{" + self.path.name + "}" + "[Synchronize]! Delta: "+sync.delta+"! Syncing with " +  sync.fromActorRef.get.path.name)
+        if(Constant.SYNCHRO_EVENT_LOG) EventLogging.addEvent("[Synchro] SynchroPKT")
+        if(Constant.SYNCHRO_LOG)log.info("{" + self.path.name + "}" + "[Synchronize]! Delta: "+sync.delta+"! Syncing with " +  sync.fromActorRef.get.path.name)
         if (sync.delta.isLeaf()) {
           val uniqueLeaf: Delta = changeIdTree.checkIfLostLeafIsFound(sync.delta)
           if (sync.delta.l == uniqueLeaf.l) { //receive unique leaf id! request all leaf data
-            communication ! RequestEbTreeDataObject(sync.delta, Some(self), sync.fromActorRef.get)
+            communication ! RequestEbTreeDataObject(sync.delta.l, Some(self), sync.fromActorRef.get)
           } else {
             // found subbranch at leaf position with leaf inside => unique leaf most left in sub branch
             val changeID = uniqueLeaf.l
@@ -144,43 +155,61 @@ class EbTreeDatabase[T](communication: ActorRef) extends Actor {
           if(delta != null){
             communication ! Synchronize(delta, Some(self), sync.fromActorRef.get)
           }else{
-            log.info("[Synchronize] Trees in Sync!")
+            if(Constant.SYNCHRO_LOG) log.info("[Synchronize] Trees in Sync!")
             communication ! SynchroFinished
           }
         }
+      }else{
+        communication ! RequestEbTreeDataObject(-1, Some(self),sync.fromActorRef.get)
+        communication ! SynchroCycleFinished
       }
 
-    case req:RequestEbTreeDataObject => changeIdTree.get(req.delta.l) match {
-      case Some(data:EbTreeDataObject[T]) =>
-        log.info("{" + self.path.name + "}" + "[RequestEbTreeDataObject]! requested: "+req.delta)
-        communication ! CheckLeaf(EbTreeDataObject[T](data.uId,data.changeId,data.payload),Some(self),req.fromActorRef.get)
-      case None =>
-        log.error("[RequestEbTreeDataObject] but requested leaf not found")
-    }
+    case req:RequestEbTreeDataObject =>
+      if(req.reqChangeId != -1) {
+        changeIdTree.get(req.reqChangeId) match {
+          case Some(data: EbTreeDataObject[T]) =>
+            if (Constant.SYNCHRO_EVENT_LOG) EventLogging.addEvent("[Synchro] SynchroPKT")
+            if (Constant.SYNCHRO_LOG) log.info("{" + self.path.name + "}" + "[RequestEbTreeDataObject]! requested: " + req.reqChangeId)
+            communication ! CheckLeaf(EbTreeDataObject[T](data.uId, data.changeId, data.payload), Some(self), req.fromActorRef.get)
+          case None =>
+            log.error("[RequestEbTreeDataObject] but requested leaf not found")
+        }
+      }else{
+          val firstLeaf:EbTreeDataObject[T] = changeIdTree.get(changeIdTree.firstKey()).get
+          val secondLeaf:EbTreeDataObject[T] = changeIdTree.get(changeIdTree.next(changeIdTree.firstKey())).get
+          communication ! CheckLeaf(EbTreeDataObject[T](firstLeaf.uId,firstLeaf.changeId,firstLeaf.payload),Some(self),req.fromActorRef.get)
+          communication ! CheckLeaf(EbTreeDataObject[T](secondLeaf.uId,secondLeaf.changeId,secondLeaf.payload),Some(self),req.fromActorRef.get)
+      }
+
+
 
     case checkL:CheckLeaf[T] => uIdTree.get(checkL.data.uId) match {
       case Some(ownData: EbTreeDataObject[T]) =>
-        log.info("{" + self.path.name + "}" + "[CheckLeaf]! found Lost Update: "+checkL.data)
+        if(Constant.SYNCHRO_EVENT_LOG) EventLogging.addEvent("[Synchro] CheckLeaf")
+        if(Constant.SYNCHRO_LOG)log.info("{" + self.path.name + "}" + "[CheckLeaf]! found Lost Update: "+checkL.data)
         ownData.changeId match {
           case cId: Long if (cId > checkL.data.changeId) =>
-            log.info("{" + self.path.name + "}" + "[CheckLeaf]! Own data is mor up to date! sending data")
+            if(Constant.SYNCHRO_LOG)log.info("{" + self.path.name + "}" + "[CheckLeaf]! Own data is mor up to date! sending data")
             communication ! CheckLeaf(EbTreeDataObject[T](ownData.uId, ownData.changeId, ownData.payload), Some(self), checkL.fromActorRef.get)
           case cId: Long if (cId < checkL.data.changeId) =>
-            log.info("{" + self.path.name + "}" + "[CheckLeaf]! Own data is old! updating!")
+            if(Constant.SYNCHRO_LOG)log.info("{" + self.path.name + "}" + "[CheckLeaf]! Own data is old! updating!")
             self ! UpdateObject(checkL.data,Some(self),self)
-            communication ! SynchroFinished
+            communication ! SynchroCycleFinished
           case cId: Long if (cId == checkL.data.changeId) =>
+            //Todo delete
             log.error("{" + self.path.name + "}" + "[CheckLeaf] received with equal cID:"+cId)
+            log.error("First"+ changeIdTree.firstKey()+"sec "+changeIdTree.next(changeIdTree.firstKey()))
             EventLogging.addEvent("[CheckLeaf] RECEIVED DUPLICATE!")
             //val leftItem:EbTreeDataObject[T] = changeIdTree.get(changeIdTree.prev(ownData.changeId)).get
             //communication ! CheckLeaf(leftItem,Some(self),checkL.fromActorRef.get)
-            communication ! SynchroFinished
+            communication ! SynchroCycleFinished
         }
       case _ =>
-        log.info("{" + self.path.name + "}" + "[CheckLeaf] ! found Lost Insert: "+checkL.data)
+        if(Constant.SYNCHRO_EVENT_LOG) EventLogging.addEvent("[Synchro] CheckLeaf")
+        if(Constant.SYNCHRO_LOG)log.info("{" + self.path.name + "}" + "[CheckLeaf] ! found Lost Insert: "+checkL.data)
         uIdTree.put(checkL.data.uId, checkL.data)
         changeIdTree.put(checkL.data.changeId, checkL.data)
-        communication ! SynchroFinished
+        communication ! SynchroCycleFinished
     }
 
     //TODO synchronized delete of empty objects
@@ -188,16 +217,16 @@ class EbTreeDatabase[T](communication: ActorRef) extends Actor {
 
 
     case GetuIdTreeRequest => //returns tree reference for tree diff
-      log.info("{" + self.path.name + "}" + "[GetuIdTreeRequest] received! Sending uIdTree.")
+      if(Constant.LOG)log.info("{" + self.path.name + "}" + "[GetuIdTreeRequest] received! Sending uIdTree.")
       sender ! Tree(uIdTree)
     case GetChangeIdTreeRequest => //returns tree reference for tree diff
-      log.info("{" + self.path.name + "}" + "[GetChangeIdTreeRequest] received! Sending changeIdTree.")
+      if(Constant.LOG)log.info("{" + self.path.name + "}" + "[GetChangeIdTreeRequest] received! Sending changeIdTree.")
       sender ! Tree(changeIdTree)
 
     case ShutDownActorRequest =>
       context.system.shutdown()
 
-    case _ => println("TreeActor wrong message received")
+    case _ => log.error("TreeActor wrong message received")
   }
 }
 

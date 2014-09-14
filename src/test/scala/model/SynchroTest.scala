@@ -45,8 +45,8 @@ with DefaultTimeout with ImplicitSender with FunSuiteLike with Matchers with Bef
     val comp:TreeCompare[EbTreeDataObject[Int]] = new TreeCompare[EbTreeDataObject[Int]](db1,db2,system)
     var diff:(Int,Int) = comp.compareTrees()
     while(diff._2!=0){
-      communication ! StartSynchro(Some(db1),db2)
-      expectMsg(SynchroFinished)
+      communication ! StartSynchroCycle(Some(db1),db2)
+      expectMsg(SynchroCycleFinished)
       diff = comp.compareTrees()
     }
     assert(diff._2==0)
@@ -76,8 +76,8 @@ with DefaultTimeout with ImplicitSender with FunSuiteLike with Matchers with Bef
 
     var diff:(Int,Int) = comp.compareTrees()
     while(diff._2!=0){
-      communication ! StartSynchro(Some(db1),db2)
-      expectMsg(SynchroFinished)
+      communication ! StartSynchroCycle(Some(db1),db2)
+      expectMsg(SynchroCycleFinished)
       diff = comp.compareTrees()
     }
     assert(diff==(0,0))
@@ -105,8 +105,8 @@ with DefaultTimeout with ImplicitSender with FunSuiteLike with Matchers with Bef
     val comp:TreeCompare[EbTreeDataObject[Int]] = new TreeCompare[EbTreeDataObject[Int]](db1,db2,system)
     var diff:(Int,Int) = comp.compareTrees()
     while(diff._2!=0){
-      communication ! StartSynchro(Some(db1),db2)
-      expectMsg(SynchroFinished)
+      communication ! StartSynchroCycle(Some(db1),db2)
+      expectMsg(SynchroCycleFinished)
       diff = comp.compareTrees()
     }
     assert(diff._2==0)
@@ -132,8 +132,8 @@ with DefaultTimeout with ImplicitSender with FunSuiteLike with Matchers with Bef
     val comp:TreeCompare[EbTreeDataObject[Int]] = new TreeCompare[EbTreeDataObject[Int]](db1,db2,system)
     var diff:(Int,Int) = comp.compareTrees()
     while(diff._2!=0){
-      communication ! StartSynchro(Some(db1),db2)
-      expectMsg(SynchroFinished)
+      communication ! StartSynchroCycle(Some(db1),db2)
+      expectMsg(SynchroCycleFinished)
       diff = comp.compareTrees()
     }
     assert(diff._2==0)
@@ -159,8 +159,8 @@ with DefaultTimeout with ImplicitSender with FunSuiteLike with Matchers with Bef
     val comp:TreeCompare[EbTreeDataObject[Int]] = new TreeCompare[EbTreeDataObject[Int]](db1,db2,system)
     var diff:(Int,Int) = comp.compareTrees()
     while(diff._2!=0){
-      communication ! StartSynchro(Some(db1),db2)
-      expectMsg(SynchroFinished)
+      communication ! StartSynchroCycle(Some(db1),db2)
+      expectMsg(SynchroCycleFinished)
       diff = comp.compareTrees()
     }
     assert(diff._2==0)
@@ -183,8 +183,8 @@ with DefaultTimeout with ImplicitSender with FunSuiteLike with Matchers with Bef
     val comp:TreeCompare[EbTreeDataObject[Int]] = new TreeCompare[EbTreeDataObject[Int]](db1,db2,system)
     var diff:(Int,Int) = comp.compareTrees()
     while(diff._2!=0){
-      communication ! StartSynchro(Some(db1),db2)
-      expectMsg(SynchroFinished)
+      communication ! StartSynchroCycle(Some(db1),db2)
+      expectMsg(SynchroCycleFinished)
       diff = comp.compareTrees()
      }
     assert(diff._2==0)
@@ -207,8 +207,8 @@ with DefaultTimeout with ImplicitSender with FunSuiteLike with Matchers with Bef
     val comp:TreeCompare[EbTreeDataObject[Int]] = new TreeCompare[EbTreeDataObject[Int]](db1,db2,system)
     var diff:(Int,Int) = comp.compareTrees()
     while(diff._2!=0){
-      communication ! StartSynchro(Some(db1),db2)
-      expectMsg(SynchroFinished)
+      communication ! StartSynchroCycle(Some(db1),db2)
+      expectMsg(SynchroCycleFinished)
       diff = comp.compareTrees()
     }
     assert(diff._2==0)
@@ -231,8 +231,8 @@ with DefaultTimeout with ImplicitSender with FunSuiteLike with Matchers with Bef
     val comp:TreeCompare[EbTreeDataObject[Int]] = new TreeCompare[EbTreeDataObject[Int]](db1,db2,system)
     var diff:(Int,Int) = comp.compareTrees()
     while(diff._2!=0){
-      communication ! StartSynchro(Some(db1),db2)
-      expectMsg(SynchroFinished)
+      communication ! StartSynchroCycle(Some(db1),db2)
+      expectMsg(SynchroCycleFinished)
       diff = comp.compareTrees()
     }
     assert(diff._2==0)
@@ -255,8 +255,8 @@ with DefaultTimeout with ImplicitSender with FunSuiteLike with Matchers with Bef
     val comp:TreeCompare[EbTreeDataObject[Int]] = new TreeCompare[EbTreeDataObject[Int]](db1,db2,system)
     var diff:(Int,Int) = comp.compareTrees()
     while(diff._2!=0){
-      communication ! StartSynchro(Some(db1),db2)
-      expectMsg(SynchroFinished)
+      communication ! StartSynchroCycle(Some(db1),db2)
+      expectMsg(SynchroCycleFinished)
       //readLine()
       diff = comp.compareTrees()
     }
@@ -281,8 +281,8 @@ with DefaultTimeout with ImplicitSender with FunSuiteLike with Matchers with Bef
     val comp:TreeCompare[EbTreeDataObject[Int]] = new TreeCompare[EbTreeDataObject[Int]](db1,db2,system)
     var diff:(Int,Int) = comp.compareTrees()
     while(diff._2!=0){
-      communication ! StartSynchro(Some(db1),db2)
-      expectMsg(SynchroFinished)
+      communication ! StartSynchroCycle(Some(db1),db2)
+      expectMsg(SynchroCycleFinished)
       diff = comp.compareTrees()
     }
     assert(diff._2==0)
@@ -304,8 +304,8 @@ with DefaultTimeout with ImplicitSender with FunSuiteLike with Matchers with Bef
     val comp:TreeCompare[EbTreeDataObject[Int]] = new TreeCompare[EbTreeDataObject[Int]](db1,db2,system)
     var diff:(Int,Int) = comp.compareTrees()
     while(diff._2!=0){
-      communication ! StartSynchro(Some(db1),db2)
-      expectMsg(SynchroFinished)
+      communication ! StartSynchroCycle(Some(db1),db2)
+      expectMsg(SynchroCycleFinished)
       diff = comp.compareTrees()
     }
     assert(diff._2==0)
@@ -337,8 +337,8 @@ with DefaultTimeout with ImplicitSender with FunSuiteLike with Matchers with Bef
     var diff:(Int,Int) = comp.compareTrees()
     while(diff!=(0,0)){
       if(oldDiff!= diff){
-        communication ! StartSynchro(Some(db1),db2)
-        expectMsg(SynchroFinished)
+        communication ! StartSynchroCycle(Some(db1),db2)
+        expectMsg(SynchroCycleFinished)
         oldDiff = diff
         diff = comp.compareTrees()
         log.info("Diff "+diff)

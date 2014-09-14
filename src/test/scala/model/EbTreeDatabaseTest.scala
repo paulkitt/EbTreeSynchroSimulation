@@ -102,7 +102,7 @@ with DefaultTimeout with ImplicitSender with FunSuiteLike with Matchers with Bef
     expectMsg( CheckLeaf(EbTreeDataObject(1032,1032,1),Some(actorRef),self))
 
     actorRef ! Synchronize(Delta(1040,3,-1,1046,1046),Some(self),actorRef)
-    expectMsg(RequestEbTreeDataObject(Delta(1040,3,-1,1046,1046), Some(actorRef), self))
+    expectMsg(RequestEbTreeDataObject(1046, Some(actorRef), self))
   }
 
   test("EbTreeDatabase RequestEbTreeDataObject") {
@@ -113,7 +113,7 @@ with DefaultTimeout with ImplicitSender with FunSuiteLike with Matchers with Bef
     idList.
       foreach(x => actorRef ! InsertNewObject(EbTreeDataObject[Int](x, x, 1), None, null))
 
-    actorRef ! RequestEbTreeDataObject(Delta(1040,3,-1,1045,1045), Some(self),actorRef)
+    actorRef ! RequestEbTreeDataObject(1045, Some(self),actorRef)
     expectMsg(CheckLeaf(EbTreeDataObject[Int](1045,1045,1),Some(actorRef),self))
   }
 

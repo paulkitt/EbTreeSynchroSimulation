@@ -36,7 +36,7 @@ class CommunicationLayer(var pktLossPsbl:Int, pktDeley:Int) extends Actor{
     //basic  operations
 //----------------------------------------------------------------------------------------------------------------------------------
     case Clock =>
-      log.info("[Clock] received!")
+      if(Constant.LOG)log.info("[Clock] received!")
       if(!ebTreeMessageQueue.isEmpty){
         ebTreeMessageQueue.head.foreach(x => x.toActorRef ! x) // send all queued messages
         ebTreeMessageQueue = ebTreeMessageQueue.tail//delete head
@@ -46,7 +46,12 @@ class CommunicationLayer(var pktLossPsbl:Int, pktDeley:Int) extends Actor{
       if(!isLost()){
         //log.info("[InsertNewObject] ! Placing item in queue")
         if(!isDelayed()){
-          ebTreeMessageQueue = List(ebTreeMessageQueue.head ::: List(x) ) ::: ebTreeMessageQueue.tail
+          if(ebTreeMessageQueue.isEmpty){
+            ebTreeMessageQueue = List(List(x))
+          }else{
+            ebTreeMessageQueue = List(ebTreeMessageQueue.head ::: List(x) ) ::: ebTreeMessageQueue.tail
+          }
+
         }else{
           ebTreeMessageQueue = List(ebTreeMessageQueue.head) ::: List(ebTreeMessageQueue.tail.head ::: List(x) ) ::: ebTreeMessageQueue.tail.tail
         }
@@ -68,13 +73,17 @@ class CommunicationLayer(var pktLossPsbl:Int, pktDeley:Int) extends Actor{
 
     //sync operations
 //----------------------------------------------------------------------------------------------------------------------------------
-    case x:StartSynchro =>
-      log.info("{" + self.path.name + "}" + "[StartSynchro] received! Syncing from: "+x.fromActorRef.get.path.name + " to: "+x.toActorRef.path.name)
+    case x:StartSynchroCycle =>
+      if(Constant.SYNCHRO_LOG)log.info("{" + self.path.name + "}" + "[StartSynchro] received! Syncing from: "+x.fromActorRef.get.path.name + " to: "+x.toActorRef.path.name)
       synchroStart = sender
       x.toActorRef ! Synchronize(Delta(0, 64, -1, -1, -2),Some(x.fromActorRef.get),x.toActorRef)
 
+    case SynchroCycleFinished =>
+      if(Constant.SYNCHRO_LOG)log.info("{" + self.path.name + "}" + "[StopSynchro] finished syncCycle ")
+      synchroStart ! SynchroCycleFinished
+
     case SynchroFinished =>
-      log.info("{" + self.path.name + "}" + "[StopSynchro] finished! Syncing ")
+      if(Constant.SYNCHRO_LOG)log.info("{" + self.path.name + "}" + "[SynchroFinished] finished Syncing Databases ")
       synchroStart ! SynchroFinished
 
     case sync:Synchronize =>

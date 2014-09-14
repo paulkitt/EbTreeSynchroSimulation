@@ -1,7 +1,7 @@
 package src.main.scala.model
 
 import org.slf4j.LoggerFactory
-import simulation.EventLogging
+import simulation.{EventLogging,Constant}
 
 
 /**
@@ -170,7 +170,7 @@ class EbTree[T] {
    * @param uid the uid of the leaf
    * @return payload of the leaf or None if the leaf could not been found
    */
-  def get(uid: Long): Option[T] = findLeaf(uid).get match {
+  def get(uid: Long): Option[T] = findLeaf(uid).getOrElse(null) match {
     case leaf: Leaf[T] if (leaf.myUid == uid) => Some(leaf.myPayload)
     case _ => None
   }
@@ -221,6 +221,7 @@ class EbTree[T] {
     }
 
     if(t.l == -1 && t.r == -1){ //Optimierung hier abkuerzen -> jump one one over lvl gap, possible loops
+      if(Constant.SYNCHRO_EVENT_LOG) EventLogging.addEvent("[Synchro] Return NextNode")
       var nextNode:Delta = Delta(t.id,node.myBit,node.myZero)
 //      if(nextNode.to < t.to && node.myBit > t.to){ //check if leaf?? // Buggy optimisation
 //        nextNode = nextDelta(Delta(t.id,0,0,-1,-1))
@@ -231,11 +232,13 @@ class EbTree[T] {
 
     if (node.myBit == t.to) { // same bit lvl diff childs
       if (node.myZero.getID() != t.l) {
+        if(Constant.SYNCHRO_EVENT_LOG) EventLogging.addEvent("[Synchro] Go left")
         return Delta(t.id, t.to, node.myZero) // A)
       } else if(node.myOne.getID() != t.r) {
+        if(Constant.SYNCHRO_EVENT_LOG) EventLogging.addEvent("[Synchro] Go right")
         return Delta(t.id+(1L<<node.myBit), t.to, node.myOne) // B)
       }else{ // trees synchronized
-        log.info("[EbTree] trees synchronized! BitLvLs: " + node.myBit + "/" + t.to +
+        if(Constant.SYNCHRO_LOG)log.info("[EbTree] trees synchronized! BitLvLs: " + node.myBit + "/" + t.to +
           "from: "+node.myParent.myBit + "/" + t.from +
           " left: "+node.myZero.getID() + "/" + t.l +
           " right: " +node.myOne.getID() + "/" + t.r)
@@ -252,10 +255,15 @@ class EbTree[T] {
       }
     }
     else if (node.myBit > t.to) {        // flip sides
+      if(Constant.SYNCHRO_EVENT_LOG) EventLogging.addEvent("[Synchro] Flip Sides")
       return  Delta(t.id, t.from, node); // F) (0000,1,3,l,r)
     }
     else { // node.myBit < t.to
-      if (t.l == node.getID()) return new Delta(t.id+(1L<<t.to), 0 , 0, -1, -1) // D) => found triangle go right take most left leaf
+      if (t.l == node.getID()){
+        if(Constant.SYNCHRO_EVENT_LOG) EventLogging.addEvent("[Synchro] BitLvlDiff LeftNode equal")
+        return new Delta(t.id+(1L<<t.to), 0 , 0, -1, -1) // D) => found triangle go right take most left leaf
+      }
+      if(Constant.SYNCHRO_EVENT_LOG) EventLogging.addEvent("[Synchro] BitLvlDiff")
       return  Delta(t.id, t.from, node.myBit, -1, -1) //E => request next left triangle
     }
   }
@@ -287,12 +295,20 @@ class EbTree[T] {
 //------------------------------------------------------------------------------------
   def firstKey(): Long = {
     if (myRoot.isEmpty) -1 // here we have the problem, that if -1 is the only single key, it will not work
-    findLeaf(0L).get.myUid
+    val leaf = findLeaf(0L)
+    if(leaf!=None)
+      leaf.get.myUid
+    else
+      -1
   }
 
   def lastKey(): Long = {
     if (myRoot.isEmpty) 0 // here we have the problem, that if 0 is the only single key, it will not work
-    findLeaf(-1L).get.myUid
+    val leaf = findLeaf(-1L)
+    if(leaf!=None)
+      leaf.get.myUid
+    else
+      0
   }
 
   def snapUp(uid: Long): Long = findLeaf(uid) match {

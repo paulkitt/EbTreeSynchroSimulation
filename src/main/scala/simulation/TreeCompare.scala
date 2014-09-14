@@ -27,16 +27,14 @@ class TreeCompare[T](system:ActorSystem) {
     firstDB = getTreesOfCell(firstDBActor)
     secondDB = getTreesOfCell(secondDBActor)
   }
-  def paintTrees() = ???
 
-  def compareStructures() = ???
 
   def printTreeItems(){
     val a:List[Long] = printTreeItems(firstDB._2,firstDB._2.firstKey(),List())
     val b:List[Long] = printTreeItems(secondDB._2,secondDB._2.firstKey(),List())
-    log.info("TreeA: "+ a)
-    log.info("TreeB: "+ b)
-    log.info("DIFF A B: "+a.filterNot(b.contains))
+//    log.info("TreeA: "+ a)
+//    log.info("TreeB: "+ b)
+//    log.info("DIFF A B: "+a.filterNot(b.contains))
   }
   def printTreeItems(tree:EbTree[T],key:Long,items:List[Long]):List[Long] = key match{
     case 0 => items
@@ -55,6 +53,14 @@ class TreeCompare[T](system:ActorSystem) {
     var diff = 0
     var keyA = treeA.firstKey()
     var keyB = treeB.firstKey()
+    if(keyA== -1 || keyB== -1){
+      log.error("[TreeCompare] Compare but trees empty")
+      EventLogging.addEvent("[TreeCompare] Compare but trees empty")
+      Thread.sleep(100)
+      keyA = treeA.firstKey()
+      keyB = treeB.firstKey()
+    }
+
     while(keyA!=0 || keyB!=0){
       if(keyA==0){
         diff += 1
@@ -83,7 +89,7 @@ class TreeCompare[T](system:ActorSystem) {
     var receivedAnswerCiDTree:Boolean = false
     var uIdTreeReceived:EbTree[T] = null
     var cIdTreeReceived:EbTree[T] = null
-    implicit val timeout = Timeout(2.second)
+    implicit val timeout = Timeout(60.second)
     implicit val ec = system.dispatcher
 
     val uIdTreeAnswer:Future[Any] = treeActor ? GetuIdTreeRequest
@@ -100,7 +106,7 @@ class TreeCompare[T](system:ActorSystem) {
       case _ =>  log.error("[Failure]!Get ChangeIdTree failed!")
     }
 
-    log.info("trees received")
+    //log.info("trees received")
     (uIdTreeReceived,cIdTreeReceived)
   }
 }

@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory
  * Created by prototyp on 23.06.14.
  */
 class AccessLayer[T](communicationLayer:ActorRef, actors:List[ActorRef],keyLength:Int) {
-  var randomRange:Int = 0
+
   var sequence:Int = 0
   val log = LoggerFactory.getLogger(classOf[AccessLayer[T]])
 
@@ -38,6 +38,7 @@ class AccessLayer[T](communicationLayer:ActorRef, actors:List[ActorRef],keyLengt
   def getID():Long = keyLength match{
     case 40 => genID40
     case 48 => genID48
+    case 56 => genID56
     case 64 => genID64
   }
 
@@ -59,6 +60,23 @@ class AccessLayer[T](communicationLayer:ActorRef, actors:List[ActorRef],keyLengt
     java.lang.Long.parseLong(binary,2)
   }
 
+  def genID56():Long = {
+
+    val timestamp = (System.currentTimeMillis / 1000).toBinaryString
+    val seqBin = toBinary(sequence,7)
+    val rndBin = toBinary(Random.nextInt(32767),15)
+
+    val binary =(timestamp + seqBin  +  rndBin)
+    sequence+=1
+    if(sequence>=255){
+      sequence =0
+    }
+    if(timestamp.length>32 || seqBin.length>8 || rndBin.length>16){
+      log.error("[AccessLayer] 64: TmpLen: "+timestamp.length+" seqLen: "+seqBin.length+" rndBinLen: "+rndBin.length)
+      log.error("[AccessLayer] Binary Error")
+    }
+    java.lang.Long.parseLong(binary,2)
+  }
   def genID48():Long = {
     val timestamp = (System.currentTimeMillis / 1000).toBinaryString
     val rndBin = toBinary(Random.nextInt(32767),15)
