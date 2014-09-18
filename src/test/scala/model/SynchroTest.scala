@@ -347,7 +347,7 @@ with DefaultTimeout with ImplicitSender with FunSuiteLike with Matchers with Bef
         db2 ! PaintTree
       }else{
         comp.printTreeItems()
-        Thread.sleep(10000)
+        Thread.sleep(1000)
       }
 
 

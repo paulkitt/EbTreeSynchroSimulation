@@ -97,9 +97,12 @@ class EbTreeDatabase[T](communication: ActorRef) extends Actor {
       cells.foreach(x => log.info("{" + self.path.name + "}" + ": Init with Actor:" + x.path.name))
 
     case PaintTree =>
-      if(Constant.GRAPHIC_ACTIVE && treeV==null)
+      if(Constant.GRAPHIC_ACTIVE==true && treeV==null){
         treeV = new TreeView("")
-      if(changeIdTree.myRoot!=None && Constant.GRAPHIC_ACTIVE)treeV.setTree(changeIdTree.myRoot.get.myZero)
+      }
+      if(changeIdTree.myRoot!=None && Constant.GRAPHIC_ACTIVE == true){
+        treeV.setTree(changeIdTree.myRoot.get.myZero)
+      }
 
     case ClearTree =>
       uIdTree = new EbTree[EbTreeDataObject[T]]
@@ -196,12 +199,6 @@ class EbTreeDatabase[T](communication: ActorRef) extends Actor {
             self ! UpdateObject(checkL.data,Some(self),self)
             communication ! SynchroCycleFinished
           case cId: Long if (cId == checkL.data.changeId) =>
-            //Todo delete
-            log.error("{" + self.path.name + "}" + "[CheckLeaf] received with equal cID:"+cId)
-            log.error("First"+ changeIdTree.firstKey()+"sec "+changeIdTree.next(changeIdTree.firstKey()))
-            EventLogging.addEvent("[CheckLeaf] RECEIVED DUPLICATE!")
-            //val leftItem:EbTreeDataObject[T] = changeIdTree.get(changeIdTree.prev(ownData.changeId)).get
-            //communication ! CheckLeaf(leftItem,Some(self),checkL.fromActorRef.get)
             communication ! SynchroCycleFinished
         }
       case _ =>
@@ -224,7 +221,7 @@ class EbTreeDatabase[T](communication: ActorRef) extends Actor {
       sender ! Tree(changeIdTree)
 
     case ShutDownActorRequest =>
-      context.system.shutdown()
+      context.stop(self)
 
     case _ => log.error("TreeActor wrong message received")
   }

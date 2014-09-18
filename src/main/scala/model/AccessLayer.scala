@@ -36,7 +36,6 @@ class AccessLayer[T](communicationLayer:ActorRef, actors:List[ActorRef],keyLengt
   def getObject(uId:Long,changeId:Long) = ???
 
   def getID():Long = keyLength match{
-    case 40 => genID40
     case 48 => genID48
     case 56 => genID56
     case 64 => genID64
@@ -86,17 +85,6 @@ class AccessLayer[T](communicationLayer:ActorRef, actors:List[ActorRef],keyLengt
 
     if(timestamp.length>32 || rndBin.length>16){
       log.error("[AccessLayer] 48: TmpLen: "+timestamp.length+" rndBinLen: "+rndBin.length)
-      log.error("[AccessLayer] Binary Error")
-    }
-    java.lang.Long.parseLong(binary,2)
-  }
-
-  def genID40():Long = {
-    val timestamp = (System.currentTimeMillis / 1000).toBinaryString
-    val rndBin = toBinary(Random.nextInt(255),7)
-    val binary =(timestamp + rndBin)
-    if(timestamp.length>32 ||  rndBin.length>8){
-      log.error("[AccessLayer] 40: TmpLen: "+timestamp.length+" rndBinLen: "+rndBin.length)
       log.error("[AccessLayer] Binary Error")
     }
     java.lang.Long.parseLong(binary,2)
