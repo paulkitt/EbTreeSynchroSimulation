@@ -182,6 +182,7 @@ class EbTree[T] {
    */
   def remove(uid: Long): Option[T] = findLeaf(uid).get match {
     case leaf: Leaf[T] if (leaf.myUid == uid) => {
+
       val node = leaf.myParent
       val parent = node.myParent
       if (parent == None) myRoot = None //TODO check working
@@ -192,7 +193,7 @@ class EbTree[T] {
       mySize -= 1
       Some(leaf.myPayload)
     }
-    case _ => log.error("Tree.remove : No leaf to remove Found!");None //TODO should be null
+    case _ => None //TODO should be null
   }
 //Synchronisation
 //------------------------------------------------------------------------------------

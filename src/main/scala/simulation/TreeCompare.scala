@@ -17,17 +17,23 @@ import org.slf4j.LoggerFactory
  */
 //TODO make generic
 class TreeCompare[T](system:ActorSystem) {
-
+  var firstDBActor:ActorRef = _
+  var secondDBActor:ActorRef = _
   var firstDB:(EbTree[T],EbTree[T])   = _
   var secondDB:(EbTree[T],EbTree[T])  = _
   val log = LoggerFactory.getLogger(classOf[TreeCompare[T]])
 
-  def this (firstDBActor:ActorRef, secondDBActor:ActorRef,system:ActorSystem){
+  def this (firstDBActorInc:ActorRef, secondDBActorInc:ActorRef,system:ActorSystem){
     this(system)
+    firstDBActor = firstDBActorInc
+    secondDBActor = secondDBActorInc
+    getTrees()
+  }
+  def getTrees(){
     firstDB = getTreesOfCell(firstDBActor)
     secondDB = getTreesOfCell(secondDBActor)
+    //log.info("TreeSize" +firstDB._1.size() +"/" + secondDB._1.size())
   }
-
 
   def printTreeItems(){
     val a:List[Long] = printTreeItems(firstDB._2,firstDB._2.firstKey(),List())
@@ -41,12 +47,33 @@ class TreeCompare[T](system:ActorSystem) {
     case x =>  printTreeItems(tree,tree.next(key),x :: items)
   }
 
+//  def check(x:List[Long]){
+//    getTrees()
+//    var found = 0
+//    var noFound = 0
+//    x.foreach( id =>{
+//      val data  = firstDB._1.get(id)
+//      if(data != None){
+//        found += 1
+//      }else{noFound +=1}
+//    })
+//    log.info("found "+found)
+//    log.info("no found "+noFound)
+//  }
 
-  def compareTrees():(Int,Int) ={
+  def getTreeDiff():(Int,Int) ={
+    getTrees()
     //compare as lists
     val lostInserts = compareLeaf(firstDB._1,secondDB._1)// get number off lost inserts
     val lostUpdates = compareLeaf(firstDB._2,secondDB._2)// get number off lost updates
     (lostInserts,lostUpdates)
+  }
+  def getTreeDiffInPercent():Double = {
+
+    val diff = getTreeDiff()
+    val maxDiff = firstDB._2.size() + secondDB._2.size()
+    val onePerc = 100.0/maxDiff
+    diff._2.toDouble * onePerc
   }
 
   def compareLeaf(treeA:EbTree[T], treeB:EbTree[T]):Int = {
@@ -100,7 +127,7 @@ class TreeCompare[T](system:ActorSystem) {
     }
 
     val cIdTreeAnswer:Future[Any] = treeActor ? GetChangeIdTreeRequest
-    val answerCID = Await.result(uIdTreeAnswer,timeout.duration)
+    val answerCID = Await.result(cIdTreeAnswer,timeout.duration)
     answerCID match {
       case Tree(cIdTree:EbTree[Any]) => cIdTreeReceived = cIdTree.asInstanceOf[EbTree[T]]
       case _ =>  log.error("[Failure]!Get ChangeIdTree failed!")

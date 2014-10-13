@@ -17,6 +17,7 @@ trait EBTreeMessage {
 // Init
 case class SetTreeActors(actors: List[ActorRef])
 case class SetLoss(loss:Int)
+case class SetSyncStop(stop:Int)
 
 //----------------------------------------------------------------------------------------------
 //Basic tree ops
@@ -50,6 +51,8 @@ case object SynchroCycleFinished{
   override def toString = {"SynchroCycleFinished"}
 }
 case object SynchroFinished
+
+case object SynchroStoped
 
 case class Synchronize(delta: Delta,from:Option[ActorRef], to:ActorRef) extends EBTreeMessage {
   fromActorRef = from; toActorRef = to
@@ -89,7 +92,6 @@ class EbTreeDatabase[T](communication: ActorRef) extends Actor {
   val log = Logging(context.system, this)
 
 
-
   override def receive: Receive = {
     //treeActor init
     case SetTreeActors(actors: List[ActorRef]) =>
@@ -122,7 +124,10 @@ class EbTreeDatabase[T](communication: ActorRef) extends Actor {
         uIdTree.put(uptObj.changedObject.uId, uptObj.changedObject)
         changeIdTree.remove(oldObJ.changeId) // remove old changeId from changeIDTree
         changeIdTree.put(uptObj.changedObject.changeId, uptObj.changedObject) // insert new ChangeId
-      case _ =>
+      case _ =>{
+        uIdTree.put(uptObj.changedObject.uId, uptObj.changedObject)
+        changeIdTree.put(uptObj.changedObject.changeId, uptObj.changedObject)
+      }
     }
 
     case delObj:RemoveObject[T] => uIdTree.get(delObj.removedObject.uId) match {
@@ -188,14 +193,15 @@ class EbTreeDatabase[T](communication: ActorRef) extends Actor {
 
     case checkL:CheckLeaf[T] => uIdTree.get(checkL.data.uId) match {
       case Some(ownData: EbTreeDataObject[T]) =>
-        if(Constant.SYNCHRO_EVENT_LOG) EventLogging.addEvent("[Synchro] CheckLeaf")
+
         if(Constant.SYNCHRO_LOG)log.info("{" + self.path.name + "}" + "[CheckLeaf]! found Lost Update: "+checkL.data)
         ownData.changeId match {
           case cId: Long if (cId > checkL.data.changeId) =>
-            if(Constant.SYNCHRO_LOG)log.info("{" + self.path.name + "}" + "[CheckLeaf]! Own data is mor up to date! sending data")
+            if(Constant.SYNCHRO_LOG)log.info("{" + self.path.name + "}" + "[CheckLeaf]! Own data is more up to date! sending data")
             communication ! CheckLeaf(EbTreeDataObject[T](ownData.uId, ownData.changeId, ownData.payload), Some(self), checkL.fromActorRef.get)
           case cId: Long if (cId < checkL.data.changeId) =>
             if(Constant.SYNCHRO_LOG)log.info("{" + self.path.name + "}" + "[CheckLeaf]! Own data is old! updating!")
+            if(Constant.SYNCHRO_EVENT_LOG) EventLogging.addEvent("[Synchro] CheckLeaf")
             self ! UpdateObject(checkL.data,Some(self),self)
             communication ! SynchroCycleFinished
           case cId: Long if (cId == checkL.data.changeId) =>
@@ -216,6 +222,7 @@ class EbTreeDatabase[T](communication: ActorRef) extends Actor {
     case GetuIdTreeRequest => //returns tree reference for tree diff
       if(Constant.LOG)log.info("{" + self.path.name + "}" + "[GetuIdTreeRequest] received! Sending uIdTree.")
       sender ! Tree(uIdTree)
+
     case GetChangeIdTreeRequest => //returns tree reference for tree diff
       if(Constant.LOG)log.info("{" + self.path.name + "}" + "[GetChangeIdTreeRequest] received! Sending changeIdTree.")
       sender ! Tree(changeIdTree)
@@ -226,7 +233,3 @@ class EbTreeDatabase[T](communication: ActorRef) extends Actor {
     case _ => log.error("TreeActor wrong message received")
   }
 }
-
-//How to start synchronisation -> spawn actor which sleeps given oder rnd and starts the synchro when awaik
-
-// Fehlerbehandlung ?

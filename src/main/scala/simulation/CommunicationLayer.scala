@@ -21,17 +21,17 @@ class CommunicationLayer(var pktLossPsbl:Int, pktDeley:Int) extends Actor{
 //  var ebTreeMessageQueue2:List[List[EBTreeMessage]] = List(List())
   var synchroStart:ActorRef = _
   var log = Logging(context.system, this)
-
+  var stopSynchroAfterAmount = -1
   override def receive: Receive = {
     //init
     case SetTreeActors(actors:List[ActorRef]) =>
-      //ebTreeMessageQueue = ebTreeMessageQueue(0) :: List(List())
-      //ebTreeMessageQueue = ebTreeMessageQueue(1) :: List(List())
-      //actors.foreach(x=>ebTreeMessageQueue :: List(List(Nil)))
       cells = actors
 
     case l:SetLoss =>
       pktLossPsbl = l.loss
+
+    case l:SetSyncStop =>
+      stopSynchroAfterAmount = l.stop
 
     //basic  operations
 //----------------------------------------------------------------------------------------------------------------------------------
@@ -51,26 +51,27 @@ class CommunicationLayer(var pktLossPsbl:Int, pktDeley:Int) extends Actor{
           }else{
             ebTreeMessageQueue = List(ebTreeMessageQueue.head ::: List(x) ) ::: ebTreeMessageQueue.tail
           }
-
         }else{
           ebTreeMessageQueue = List(ebTreeMessageQueue.head) ::: List(ebTreeMessageQueue.tail.head ::: List(x) ) ::: ebTreeMessageQueue.tail.tail
         }
-
       }else{
-        log.info("[InsertNewObject] ! Item Lost!")
+        //log.info("[InsertNewObject] ! Item Lost!")
       }
 
     case x:UpdateObject[_] =>
       //insert new item the head of the queue
       if(!isLost()){
-        log.info("[UpdateObject] received! Placing item in queue")
+        //log.info("[UpdateObject] received! Placing item in queue")
         if(!isDelayed()){
-          ebTreeMessageQueue = List(ebTreeMessageQueue.head ::: List(x) ) ::: ebTreeMessageQueue.tail
+          if(ebTreeMessageQueue.isEmpty){
+            ebTreeMessageQueue = List(List(x))
+          }else{
+            ebTreeMessageQueue = List(ebTreeMessageQueue.head ::: List(x) ) ::: ebTreeMessageQueue.tail
+          }
         }else{
           ebTreeMessageQueue = List(ebTreeMessageQueue.head) ::: List(ebTreeMessageQueue.tail.head ::: List(x) ) ::: ebTreeMessageQueue.tail.tail
         }
       }
-
     //sync operations
 //----------------------------------------------------------------------------------------------------------------------------------
     case x:StartSynchroCycle =>
@@ -88,7 +89,13 @@ class CommunicationLayer(var pktLossPsbl:Int, pktDeley:Int) extends Actor{
 
     case sync:Synchronize =>
       //log.info("{" + self.path.name + "}" + "[Synchronize] Syncing "+ sync.fromActorRef.get.path.name)
-      sync.toActorRef ! sync
+      var syncMsg = EventLogging.getEvent("[Synchro] SynchroPKT").getOrElse(0)
+      if(syncMsg < stopSynchroAfterAmount || stopSynchroAfterAmount == -1){
+        sync.toActorRef ! sync
+      }else{
+        EventLogging.delEvent("[Synchro] SynchroPKT")
+        synchroStart ! SynchroStoped
+      }
 
     case x:CheckLeaf[_] =>
       x.toActorRef ! x
